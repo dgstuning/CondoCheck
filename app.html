@@ -1903,7 +1903,7 @@ var resModalVp=resModal;
 resModal=function(x,r){
   resModalVp(x,r);var card=document.querySelector('#layer .modalcard');if(!card||!(x.vistoriaEntrada||x.vistoria))return;
   var ok=r==='ADMINISTRACAO'||r==='PORTEIRO'||r==='SINDICO'||x.por===S.uid;if(!ok)return;
-  var acts=card.querySelector('.actions');if(acts)acts.appendChild(h('button',{class:'btn btn-light',type:'button',onclick:function(){VPDF.gerar(x)}},'📄 PDF da vistoria'));if(acts&&(r==='ADMINISTRACAO'||r==='PORTEIRO'))acts.appendChild(h('button',{class:'btn btn-dark',type:'button',onclick:function(){VPDF.enviar(x)}},'✉️ Enviar por e-mail'))
+  var acts=card.querySelector('.actions');if(acts)acts.appendChild(h('button',{class:'btn btn-light',type:'button',onclick:function(){VPDF.gerar(x)}},'📄 PDF da vistoria'));if(acts&&(r==='ADMINISTRACAO'||r==='PORTEIRO'))acts.appendChild(h('button',{class:'btn btn-dark',type:'button',onclick:function(){VPDF.enviar(x)}},'✉️ Enviar por e-mail'));if(acts&&(r==='ADMINISTRACAO'||r==='PORTEIRO'))acts.appendChild(h('button',{class:'btn btn-ok',type:'button',onclick:function(){CE.enviar({titulo:x.espacoNome,fotoOpt:false,assunto:'Vistoria - '+x.espacoNome+' - '+fmtD(x.data),corpo:'Termo de vistoria - '+x.espacoNome+' - '+fmtD(x.data)+' - unidade '+(x.unidadeLabel||'-')+'\n'+(S.config.nome||''),emails:[],gerar:function(){return VPDF.gerar(x,true)}})}},'💬 WhatsApp'))
 };
 /* ---- exportar: botão padrão (CSV / Excel / PDF) ---- */
 var EXP={};
@@ -3685,40 +3685,133 @@ function painelChamados(r){
   return h('div',null,row1,cards.length?h('div',{class:'kpis'},cards):null);
 }
 
-/* ---------- checklist de espaços sem reserva (Portaria e Administração) ---------- */
+/* ---------- checklist de espaços: check-in e checkout (com ou sem reserva) ---------- */
 COLS.push('checklistsEspaco');
-function checklistEspacoFazer(e){
-  var x={espacoId:e.id,espacoNome:e.nome,data:today(),unidadeLabel:'sem reserva'},m=chkMontar(x,'rotina',null),obs=h('textarea',{id:'ce-o',maxlength:'300',placeholder:'Observações (opcional)'});
-  modal(h('div',{class:'modalcard'},h('h2',{text:'✅ Checklist — '+e.nome}),
-    h('div',{class:'info',text:'Não precisa de reserva. Marque “Ressalva” no que não estiver em ordem: cada ressalva abre um possível chamado para a Administração e a Manutenção.'}),
+var CE={};
+CE.norm=function(c){var ent=c.entrada||(c.itens?{itens:c.itens,ok:c.ok,problemas:c.problemas||[],obs:c.obs||'',em:c.em,porNome:c.porNome}:null);return {ent:ent,sai:c.saida||null,aberto:c.status==='Em andamento'}};
+CE.aberto=function(id){return col('checklistsEspaco').find(function(c){return c.espacoId===id&&c.status==='Em andamento'})};
+CE.exec=function(){var r=role();return r==='PORTEIRO'||r==='ADMINISTRACAO'};
+CE.sit=function(c){var n=CE.norm(c);return c.status==='Cancelado'?'Cancelado':n.aberto?'Em andamento':'Encerrado'};
+CE.resumo=function(c){var n=CE.norm(c),f=function(r){return r?((r.problemas||[]).length?(r.problemas.length+' ressalva(s): '+r.problemas.join(', ')):'tudo em ordem'):''};
+  return 'Checklist do espaço - '+c.espacoNome+'\n'+(S.config.nome||'')+(c.evento?'\nEvento: '+c.evento:'')+'\nCheck-in: '+(n.ent?fmtDate(n.ent.em)+' - '+f(n.ent):'-')+'\nCheckout: '+(n.sai?fmtDate(n.sai.em)+' - '+f(n.sai):'ainda não realizado')};
+CE.fazer=function(e,aberto){
+  if(!aberto&&CE.aberto(e.id)){toast('Já existe um checklist em andamento neste espaço: faça o checkout.');return}
+  var fase=aberto?'saída':'entrada',ant=aberto?CE.norm(aberto).ent:null;
+  var ev=aberto?null:h('input',{type:'text',id:'ce-ev',maxlength:'80',placeholder:'Evento / responsável / unidade (opcional)','aria-label':'Evento, responsável ou unidade'});
+  var x={espacoId:e.id,espacoNome:e.nome,data:aberto?aberto.data:today(),unidadeLabel:aberto?(aberto.evento||'sem reserva'):'sem reserva'};
+  var m=chkMontar(x,fase,ant),obs=h('textarea',{id:'ce-o',maxlength:'300',placeholder:'Observações (opcional)'});
+  modal(h('div',{class:'modalcard'},h('h2',{text:(aberto?'⏹ Checkout — ':'▶ Check-in — ')+e.nome}),
+    h('div',{class:'info',text:aberto?'Confira o espaço ao fim do evento. Itens da entrada aparecem para comparar. Ressalva exige foto e abre um possível chamado. Ao concluir, o checklist é encerrado.':'Não precisa de reserva. Depois de iniciado, o checklist só se encerra com o checkout, no fim do evento. Cada ressalva abre um possível chamado.'}),
+    ev?h('div',{class:'form'},h('label',{for:'ce-ev',text:'Evento / responsável'}),ev):null,
     m.qr?h('div',{class:'form'},h('label',{for:'vs-qr',text:'QR do espaço (obrigatório)'}),m.qr):null,m.box,
     h('div',{class:'form'},h('label',{for:'ce-o',text:'Observações'}),obs),m.er,
     h('div',{class:'actions'},h('button',{class:'btn btn-light',type:'button',onclick:closeLayer},'Cancelar'),h('button',{class:'btn btn-ok',type:'button',onclick:async function(){
-      var its=await chkSalvar(x,m,'rotina');if(!its)return;var pr=its.filter(function(i){return !i.ok});
-      try{await S.db.collection('checklistsEspaco').add({espacoId:e.id,espacoNome:e.nome,em:Date.now(),data:today(),por:S.uid,porNome:S.name,itens:its,ok:!pr.length,problemas:pr.map(function(i){return i.n}),obs:obs.value.trim()});
-        var n=await possiveisChamados(x,its,'rotina',null);aud('Checklist do espaço: '+e.nome+(pr.length?' ('+pr.length+' ressalva'+(pr.length>1?'s':'')+')':''));
-        closeLayer();toast(n?'Checklist registrado — '+n+' possível(is) chamado(s) gerado(s)':'Checklist registrado: tudo em ordem')}catch(er){m.er.textContent='Não foi possível salvar.'}}},'Concluir checklist'))));
-}
+      if(!aberto&&CE.aberto(e.id)){m.er.textContent='Já existe um checklist em andamento neste espaço.';return}
+      var its=await chkSalvar(x,m,fase);if(!its)return;var pr=its.filter(function(i){return !i.ok});
+      var reg={itens:its,ok:!pr.length,problemas:pr.map(function(i){return i.n}),obs:obs.value.trim(),em:Date.now(),por:S.uid,porNome:S.name};
+      try{
+        if(aberto){var base=Object.assign({},aberto);delete base.id;await S.db.doc('checklistsEspaco/'+aberto.id).set(Object.assign(base,{status:'Encerrado',saida:reg,encerradoEm:reg.em}))}
+        else await S.db.collection('checklistsEspaco').add({espacoId:e.id,espacoNome:e.nome,status:'Em andamento',em:reg.em,data:today(),evento:ev.value.trim(),por:S.uid,porNome:S.name,entrada:reg});
+        var n=await possiveisChamados(x,its,fase,ant);aud((aberto?'Checkout':'Check-in')+' do espaço: '+e.nome+(pr.length?' ('+pr.length+' ressalva'+(pr.length>1?'s':'')+')':''));
+        closeLayer();toast(aberto?(n?'Checkout feito — '+n+' possível(is) chamado(s) gerado(s)':'Checkout feito: checklist encerrado'):(n?'Check-in feito — '+n+' possível(is) chamado(s). Falta o checkout no fim do evento.':'Check-in feito. Falta o checkout no fim do evento.'))
+      }catch(er){m.er.textContent='Não foi possível salvar.'}}},aberto?'Concluir checkout':'Concluir check-in'))));
+};
+CE.pdf=async function(c,ret,fotos){
+  var J=window.jspdf&&window.jspdf.jsPDF;if(!J||(!S.dl&&!ret)){toast('Download indisponível neste ambiente');return null}
+  if(!ret)toast('Montando o PDF…');
+  try{
+    var n=CE.norm(c),doc=new J({unit:'mm',format:'a4'}),y=16,L=15,W=180;
+    var cl=function(t){return String(t==null?'':t).replace(/[–—]/g,'-').replace(/[^ -ÿ\n]/g,'')};
+    var room=function(k){if(y+k>285){doc.addPage();y=16}};
+    var txt=function(t,sz,bold){doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(sz||10);doc.splitTextToSize(cl(t)||' ',W).forEach(function(l){room(5.4);doc.text(l,L,y);y+=(sz||10)>12?7:5.2})};
+    var addImg=function(im,w,maxh,xx){var hh=w*im.h/im.w;if(hh>maxh){hh=maxh;w=hh*im.w/im.h}doc.addImage(im.u,/^data:image\/png/.test(im.u)?'PNG':'JPEG',xx,y,w,hh);return hh};
+    txt('Checklist do espaço - '+c.espacoNome,15,true);txt(S.config.nome||'Condomínio',10);
+    txt('Situação: '+CE.sit(c)+(n.aberto?' (aguardando checkout)':'')+(c.evento?' | Evento: '+c.evento:'')+' | Data: '+fmtD(c.data),10);y+=2;
+    var reg=async function(r,tit,ant){
+      room(30);txt(tit,12,true);txt('Realizado em '+fmtDate(r.em)+' por '+(r.porNome||r.por||'portaria')+' - '+(r.ok?'tudo em ordem':'com ressalvas: '+(r.problemas||[]).join(', ')),10);y+=1;
+      var its=r.itens||[];
+      for(var i=0;i<its.length;i++){var it=its[i],a=ant&&ant.itens&&ant.itens.find(function(z){return z.n===it.n});
+        txt((i+1)+'. '+it.n+(it.q?' (qtd. '+it.q+')':'')+' - '+(it.ok?'OK':'RESSALVA: '+(it.nota||'')),10,!it.ok);
+        if(!it.ok&&a&&a.ok)txt('   Novo: estava em ordem na entrada.',9);
+        if(!it.ok&&a&&!a.ok)txt('   Já constava na entrada: '+(a.nota||''),9);
+        if(fotos!==false&&it.fotoId){var im=await VPDF.img(it.fotoId);if(im){room(52);y+=1;var hh=addImg(im,55,50,L+4);y+=hh+3}else txt('   (foto não disponível)',9)}}
+      if(r.obs)txt('Observações: '+r.obs,10);y+=4};
+    if(n.ent)await reg(n.ent,'Check-in (entrada)',null);
+    if(n.sai)await reg(n.sai,'Checkout (saída)',n.ent);
+    else if(n.aberto)txt('Checkout ainda não realizado.',10,true);
+    if(n.ent&&n.sai){var dif=n.sai.itens.filter(function(i){var a=n.ent.itens.find(function(z){return z.n===i.n});return !i.ok&&(!a||a.ok)});
+      txt('Comparação entrada x saída: '+(dif.length?'novas ressalvas na saída - '+dif.map(function(i){return i.n}).join(', ')+'. A decisão é da Administração.':'nenhuma ressalva nova na saída.'),10,true)}
+    y+=3;txt('Documento gerado em '+fmtDate(Date.now())+' por '+(S.name||'-')+' - CondoCheck.',8);
+    var fn='checklist-'+String(c.espacoNome||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+String(c.data||'').slice(0,10)+'.pdf';
+    if(ret)return {fn:fn,data:doc.output('arraybuffer')};
+    S.dl.save({filename:fn,data:doc.output('arraybuffer')}).then(function(){toast('PDF salvo')},function(e){toast(e&&e.code==='declined'?'Download cancelado':'Não foi possível baixar o PDF')});
+  }catch(e){toast('Não foi possível gerar o PDF');return null}
+};
+/* envio do PDF: WhatsApp, e-mail ou compartilhar (o artefato não anexa arquivos sozinho: o PDF é baixado e o app abre já com a mensagem) */
+CE.enviar=function(o){
+  var er=h('div',{class:'err',role:'alert'}),slot=h('div'),cfg=col('ajustes').find(function(z){return z.id==='checklistEnvio'})||{},
+    tel=h('input',{type:'tel',id:'ce-tel',inputmode:'tel',maxlength:'20',value:cfg.tel||'',placeholder:'(11) 91234-5678 — vazio: escolher o contato no WhatsApp'}),
+    em=h('input',{type:'text',id:'ce-em',maxlength:'200',value:(o.emails&&o.emails.length?o.emails.join(', '):cfg.emails||''),placeholder:'nome@exemplo.com, outro@exemplo.com'}),
+    cb=h('input',{type:'checkbox',id:'ce-fo'});cb.checked=true;
+  var num=function(){var d=tel.value.replace(/\D/g,'');if(d&&d.length<=11)d='55'+d;return d};
+  var emails=function(){var ok=/^[^\s@]+@[^\s@]+\.[^\s@]+$/,l=em.value.split(/[,;\s]+/).map(function(v){return v.trim()}).filter(Boolean),ruim=l.filter(function(v){return !ok.test(v)});if(ruim.length){er.textContent='E-mail inválido: '+ruim[0];return null}if(!l.length){er.textContent='Informe ao menos um e-mail.';return null}return l};
+  var salvar=async function(){if(role()!=='ADMINISTRACAO')return;try{await S.db.doc('ajustes/checklistEnvio').set({tel:tel.value.trim(),emails:em.value.trim(),em:Date.now()})}catch(e){}};
+  var gerar=function(){return o.gerar(o.fotoOpt===false?true:cb.checked)};
+  var baixar=async function(r){if(!S.dl)return false;try{await S.dl.save({filename:r.fn,data:r.data});return true}catch(e){return false}};
+  var wa=async function(){er.textContent='';var r=await gerar();if(!r)return;var ok=await baixar(r),url='https://wa.me/'+num()+'?text='+encodeURIComponent(o.corpo+'\n\n(PDF "'+r.fn+'" para anexar na conversa.)');
+    slot.replaceChildren(h('a',{class:'btn btn-ok',href:url,target:'_blank',rel:'noopener'},'💬 Abrir WhatsApp'));try{window.open(url,'_blank')}catch(e){}
+    await salvar();aud('PDF preparado para WhatsApp: '+o.assunto);toast(ok?'PDF baixado — anexe na conversa do WhatsApp':'Abra o WhatsApp e anexe o PDF')};
+  var mail=async function(){er.textContent='';var l=emails();if(!l)return;var r=await gerar();if(!r)return;var ok=await baixar(r),url='mailto:'+l.join(',')+'?subject='+encodeURIComponent(o.assunto)+'&body='+encodeURIComponent(o.corpo+'\n\n(Anexe o PDF "'+r.fn+'".)');
+    slot.replaceChildren(h('a',{class:'btn btn-dark',href:url,target:'_blank',rel:'noopener'},'✉️ Abrir e-mail'));try{window.open(url,'_blank')}catch(e){}
+    await salvar();aud('PDF preparado para e-mail: '+o.assunto);toast(ok?'PDF baixado — anexe no e-mail':'Abra o e-mail e anexe o PDF')};
+  var share=async function(){er.textContent='';var r=await gerar();if(!r)return;
+    try{var file=new File([r.data],r.fn,{type:'application/pdf'});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:o.assunto,text:o.corpo});aud('PDF compartilhado: '+o.assunto)}else er.textContent='Este aparelho não compartilha arquivos. Use WhatsApp ou e-mail.'}catch(e){if(e&&e.name!=='AbortError')er.textContent='Não foi possível compartilhar.'}};
+  modal(h('div',{class:'modalcard'},h('h2',{text:'📤 Enviar PDF — '+(o.titulo||'')}),
+    h('div',{class:'info',text:'No celular, “Compartilhar” já anexa o PDF (inclusive no WhatsApp). Nos botões de WhatsApp e e-mail o PDF é baixado e o aplicativo abre com a mensagem pronta: é só anexar o arquivo.'}),
+    o.fotoOpt===false?null:h('label',{class:'small',for:'ce-fo',style:'display:flex;gap:8px;align-items:center'},cb,'Incluir as fotos no PDF'),
+    h('div',{class:'form'},h('label',{for:'ce-tel',text:'WhatsApp (com DDD)'}),tel,h('label',{for:'ce-em',text:'E-mail(s)'}),em),er,slot,
+    h('div',{class:'actions'},h('button',{class:'btn btn-light',type:'button',onclick:closeLayer},'Fechar'),h('button',{class:'btn btn-light',type:'button',onclick:share},'📲 Compartilhar'),
+      h('button',{class:'btn btn-ok',type:'button',onclick:wa},'💬 WhatsApp'),h('button',{class:'btn btn-dark',type:'button',onclick:mail},'✉️ E-mail'))))
+};
+CE.enviarChk=function(c){CE.enviar({titulo:c.espacoNome,assunto:'Checklist - '+c.espacoNome+' - '+fmtD(c.data),corpo:CE.resumo(c),emails:[],gerar:function(f){return CE.pdf(c,true,f)}})};
 function checklistEspacoVer(c){
-  modal(h('div',{class:'modalcard'},h('h2',{text:'✅ '+c.espacoNome}),h('div',{class:'small',text:fmtDate(c.em)+' · '+(c.porNome||'')}),
-    h('div',{class:c.ok?'info':'warnbox',text:c.ok?'Tudo em ordem':'Ressalvas: '+(c.problemas||[]).join(', ')}),
-    h('ul',{class:'timeline'},(c.itens||[]).map(function(i){return h('li',{text:(i.ok?'✔ ':'⚠ ')+i.n+(i.ok?'':' — '+i.nota)})})),
-    c.obs?h('p',{text:c.obs}):null,h('div',{class:'actions'},h('button',{class:'btn btn-light',type:'button',onclick:closeLayer},'Fechar'))));
+  var n=CE.norm(c),exec=CE.exec(),e=col('espacos').find(function(z){return z.id===c.espacoId}),fo=h('input',{type:'checkbox',id:'cv-fo'});fo.checked=true;
+  var bloco=function(r,tit){if(!r)return null;
+    return h('div',{class:'panel'},h('h3',{text:tit}),h('div',{class:'small',text:fmtDate(r.em)+' · '+(r.porNome||r.por||'')}),
+      h('div',{class:r.ok?'info':'warnbox',text:r.ok?'Tudo em ordem':'Ressalvas: '+(r.problemas||[]).join(', ')}),
+      h('ul',{class:'timeline'},(r.itens||[]).map(function(i){return h('li',null,h('span',{text:(i.ok?'✔ ':'⚠ ')+i.n+(i.ok?'':' — '+i.nota)}),i.fotoId?h('div',null,h('img',{src:'/_blob/'+i.fotoId,alt:'Foto: '+i.n,style:'max-width:120px;max-height:90px;border-radius:8px;margin-top:4px'})):null)})),
+      r.obs?h('p',{text:r.obs}):null)};
+  var cancel=h('button',{class:'btn btn-light',type:'button'},'Cancelar checklist (aberto por engano)'),pend=false;
+  cancel.addEventListener('click',async function(){if(!pend){pend=true;cancel.textContent='Confirmar cancelamento';return}
+    try{var base=Object.assign({},c);delete base.id;await S.db.doc('checklistsEspaco/'+c.id).set(Object.assign(base,{status:'Cancelado',canceladoEm:Date.now()}));aud('Checklist cancelado: '+c.espacoNome);closeLayer();toast('Checklist cancelado')}catch(er){toast('Sem permissão')}});
+  modal(h('div',{class:'modalcard'},h('h2',{text:'✅ '+c.espacoNome}),
+    h('div',{class:'small',text:CE.sit(c)+(c.evento?' · '+c.evento:'')+' · '+fmtD(c.data)}),
+    n.aberto?h('div',{class:'warnbox',text:'Em andamento: falta o checkout no fim do evento.'}):null,
+    bloco(n.ent,'Check-in'),bloco(n.sai,'Checkout'),
+    h('label',{class:'small',for:'cv-fo',style:'display:flex;gap:8px;align-items:center;margin-top:8px'},fo,'Incluir as fotos no PDF'),
+    h('div',{class:'actions'},h('button',{class:'btn btn-light',type:'button',onclick:closeLayer},'Fechar'),
+      h('button',{class:'btn btn-light',type:'button',onclick:function(){CE.pdf(c,false,fo.checked)}},'📄 Exportar PDF'),
+      h('button',{class:'btn btn-dark',type:'button',onclick:function(){CE.enviarChk(c)}},'📤 WhatsApp / e-mail'),
+      n.aberto&&exec&&e?h('button',{class:'btn btn-ok',type:'button',onclick:function(){closeLayer();CE.fazer(e,c)}},'⏹ Fazer checkout'):null,
+      n.aberto&&role()==='ADMINISTRACAO'?cancel:null)));
 }
 function drawChecklistEspaco(r){
-  var m=$('#main'),exec=r==='PORTEIRO'||r==='ADMINISTRACAO',
+  var m=$('#main'),exec=CE.exec(),
     esp=col('espacos').slice().sort(function(a,b){return String(a.nome).localeCompare(String(b.nome))}),
     ult=col('checklistsEspaco').slice().sort(function(a,b){return (b.em||0)-(a.em||0)});
-  var out=[modHead({ic:'✅',t:'Checklist de espaços'}),h('div',{class:'info',text:'Faça o checklist de qualquer espaço, com ou sem reserva.'}),sectionTitle('Espaços')];
+  var out=[modHead({ic:'✅',t:'Checklist de espaços'}),h('div',{class:'info',text:'Faça o check-in ao começar o evento (com ou sem reserva). Depois de iniciado, o checklist só se encerra com o checkout, no fim do evento.'}),sectionTitle('Espaços')];
   if(!esp.length)out.push(empty('📍','Nenhum espaço cadastrado','A Administração cadastra os espaços em Espaços / Locais.'));
-  esp.forEach(function(e){var u=ult.find(function(c){return c.espacoId===e.id}),n=chkItens(e.nome).length;
-    out.push(h('div',{class:'person'},h('div',{class:'space-between'},h('strong',{text:'📍 '+e.nome}),u?h('span',{class:'badge '+(u.ok?'ok':'warn'),text:u.ok?'Em ordem':'Com ressalva'}):h('span',{class:'badge',text:'Sem registro'})),
-      h('div',{class:'small',text:[e.tipo,n+' itens',u?'último: '+fmtDate(u.em):''].filter(Boolean).join(' · ')}),
-      exec?h('div',{class:'actions'},h('button',{class:'btn btn-dark',type:'button',onclick:function(){checklistEspacoFazer(e)}},'▶ Fazer checklist')):null))});
+  esp.forEach(function(e){var ab=CE.aberto(e.id),u=ult.find(function(c){return c.espacoId===e.id&&c.status!=='Cancelado'&&c.status!=='Em andamento'}),n=chkItens(e.nome).length,un=u&&CE.norm(u),pu=u&&((un.sai||un.ent).problemas||[]).length;
+    out.push(h('div',{class:'person'},h('div',{class:'space-between'},h('strong',{text:'📍 '+e.nome}),ab?h('span',{class:'badge warn',text:'Em andamento'}):u?h('span',{class:'badge '+(pu?'warn':'ok'),text:pu?'Com ressalva':'Em ordem'}):h('span',{class:'badge',text:'Sem registro'})),
+      h('div',{class:'small',text:ab?'Check-in em '+fmtDate(ab.em)+' por '+(ab.porNome||'')+(ab.evento?' · '+ab.evento:'')+' — falta o checkout':[e.tipo,n+' itens',u?'último: '+fmtDate(u.em):''].filter(Boolean).join(' · ')}),
+      h('div',{class:'actions'},
+        exec?(ab?h('button',{class:'btn btn-ok',type:'button',onclick:function(){CE.fazer(e,ab)}},'⏹ Fazer checkout'):h('button',{class:'btn btn-dark',type:'button',onclick:function(){CE.fazer(e,null)}},'▶ Iniciar check-in')):null,
+        ab?h('button',{class:'btn btn-light',type:'button',onclick:function(){checklistEspacoVer(ab)}},'Ver'):null)))});
   out.push(sectionTitle('Últimos checklists'));
   if(!ult.length)out.push(h('div',{class:'info',text:'Nenhum checklist feito ainda.'}));
-  ult.slice(0,12).forEach(function(c){var pr=(c.problemas||[]).length;
-    out.push(h('button',{class:'ticket',type:'button',onclick:function(){checklistEspacoVer(c)}},h('div',{class:'space-between'},h('div',null,h('strong',{text:c.espacoNome}),h('div',{class:'tdesc',text:fmtDate(c.em)+' · '+(c.porNome||'')})),h('span',{class:'badge '+(pr?'warn':'ok'),text:pr?pr+' ressalva'+(pr>1?'s':''):'Tudo OK'}))))});
+  ult.slice(0,12).forEach(function(c){var nn=CE.norm(c),pr=((nn.sai||nn.ent||{}).problemas||[]).length,sit=CE.sit(c);
+    out.push(h('button',{class:'ticket',type:'button',onclick:function(){checklistEspacoVer(c)}},h('div',{class:'space-between'},h('div',null,h('strong',{text:c.espacoNome}),h('div',{class:'tdesc',text:fmtDate(c.em)+' · '+(c.porNome||'')+(c.evento?' · '+c.evento:'')})),
+      h('span',{class:'badge '+(sit==='Encerrado'&&!pr?'ok':'warn'),text:sit==='Encerrado'?(pr?pr+' ressalva'+(pr>1?'s':''):'Encerrado · OK'):sit}))))});
   m.replaceChildren.apply(m,out);
 }
 mod({k:'checklist',ic:'✅',t:'Checklist de espaços',see:['PORTEIRO'],edit:[],custom:drawChecklistEspaco});
