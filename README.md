@@ -10,6 +10,7 @@ Arquivo único (`app.html`, com HTML, CSS e JavaScript). Roda como **artefato Cl
 - **Chamados:** abrir, assumir, pausar, concluir, com histórico. Ao assumir, a Manutenção faz a verificação de EPI (a lista é ajustada em Configurações).
 - **Preventivas:** rotinas programadas que geram chamado. A Administração cadastra; a Manutenção vê e gera o chamado.
 - **Rondas:** a Administração cria os roteiros; a Portaria faz o checklist e cada ponto com problema abre um chamado na hora.
+- **Checklist de espaços:** a Portaria faz o checklist de qualquer espaço a qualquer hora, sem precisar de reserva. Cada ressalva exige foto (ajustável em Configurações) e abre um possível chamado; o histórico fica registrado.
 - **Reservas / Vistorias:** a Administração registra e aprova a reserva de um espaço; a Portaria faz a vistoria de entrada e de saída com o checklist daquele espaço, com assinaturas. Ressalvas viram possíveis chamados.
 - **Piscinas:** registro de pH, cloro, alcalinidade, reagentes e visto do gerente. Leitura fora do ideal abre chamado sozinha.
 - **Cadastro mestre:** equipamentos, etiquetas QR, espaços e estoque.

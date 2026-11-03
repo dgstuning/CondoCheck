@@ -3685,6 +3685,44 @@ function painelChamados(r){
   return h('div',null,row1,cards.length?h('div',{class:'kpis'},cards):null);
 }
 
+/* ---------- checklist de espaços sem reserva (Portaria e Administração) ---------- */
+COLS.push('checklistsEspaco');
+function checklistEspacoFazer(e){
+  var x={espacoId:e.id,espacoNome:e.nome,data:today(),unidadeLabel:'sem reserva'},m=chkMontar(x,'rotina',null),obs=h('textarea',{id:'ce-o',maxlength:'300',placeholder:'Observações (opcional)'});
+  modal(h('div',{class:'modalcard'},h('h2',{text:'✅ Checklist — '+e.nome}),
+    h('div',{class:'info',text:'Não precisa de reserva. Marque “Ressalva” no que não estiver em ordem: cada ressalva abre um possível chamado para a Administração e a Manutenção.'}),
+    m.qr?h('div',{class:'form'},h('label',{for:'vs-qr',text:'QR do espaço (obrigatório)'}),m.qr):null,m.box,
+    h('div',{class:'form'},h('label',{for:'ce-o',text:'Observações'}),obs),m.er,
+    h('div',{class:'actions'},h('button',{class:'btn btn-light',type:'button',onclick:closeLayer},'Cancelar'),h('button',{class:'btn btn-ok',type:'button',onclick:async function(){
+      var its=await chkSalvar(x,m,'rotina');if(!its)return;var pr=its.filter(function(i){return !i.ok});
+      try{await S.db.collection('checklistsEspaco').add({espacoId:e.id,espacoNome:e.nome,em:Date.now(),data:today(),por:S.uid,porNome:S.name,itens:its,ok:!pr.length,problemas:pr.map(function(i){return i.n}),obs:obs.value.trim()});
+        var n=await possiveisChamados(x,its,'rotina',null);aud('Checklist do espaço: '+e.nome+(pr.length?' ('+pr.length+' ressalva'+(pr.length>1?'s':'')+')':''));
+        closeLayer();toast(n?'Checklist registrado — '+n+' possível(is) chamado(s) gerado(s)':'Checklist registrado: tudo em ordem')}catch(er){m.er.textContent='Não foi possível salvar.'}}},'Concluir checklist'))));
+}
+function checklistEspacoVer(c){
+  modal(h('div',{class:'modalcard'},h('h2',{text:'✅ '+c.espacoNome}),h('div',{class:'small',text:fmtDate(c.em)+' · '+(c.porNome||'')}),
+    h('div',{class:c.ok?'info':'warnbox',text:c.ok?'Tudo em ordem':'Ressalvas: '+(c.problemas||[]).join(', ')}),
+    h('ul',{class:'timeline'},(c.itens||[]).map(function(i){return h('li',{text:(i.ok?'✔ ':'⚠ ')+i.n+(i.ok?'':' — '+i.nota)})})),
+    c.obs?h('p',{text:c.obs}):null,h('div',{class:'actions'},h('button',{class:'btn btn-light',type:'button',onclick:closeLayer},'Fechar'))));
+}
+function drawChecklistEspaco(r){
+  var m=$('#main'),exec=r==='PORTEIRO'||r==='ADMINISTRACAO',
+    esp=col('espacos').slice().sort(function(a,b){return String(a.nome).localeCompare(String(b.nome))}),
+    ult=col('checklistsEspaco').slice().sort(function(a,b){return (b.em||0)-(a.em||0)});
+  var out=[modHead({ic:'✅',t:'Checklist de espaços'}),h('div',{class:'info',text:'Faça o checklist de qualquer espaço, com ou sem reserva.'}),sectionTitle('Espaços')];
+  if(!esp.length)out.push(empty('📍','Nenhum espaço cadastrado','A Administração cadastra os espaços em Espaços / Locais.'));
+  esp.forEach(function(e){var u=ult.find(function(c){return c.espacoId===e.id}),n=chkItens(e.nome).length;
+    out.push(h('div',{class:'person'},h('div',{class:'space-between'},h('strong',{text:'📍 '+e.nome}),u?h('span',{class:'badge '+(u.ok?'ok':'warn'),text:u.ok?'Em ordem':'Com ressalva'}):h('span',{class:'badge',text:'Sem registro'})),
+      h('div',{class:'small',text:[e.tipo,n+' itens',u?'último: '+fmtDate(u.em):''].filter(Boolean).join(' · ')}),
+      exec?h('div',{class:'actions'},h('button',{class:'btn btn-dark',type:'button',onclick:function(){checklistEspacoFazer(e)}},'▶ Fazer checklist')):null))});
+  out.push(sectionTitle('Últimos checklists'));
+  if(!ult.length)out.push(h('div',{class:'info',text:'Nenhum checklist feito ainda.'}));
+  ult.slice(0,12).forEach(function(c){var pr=(c.problemas||[]).length;
+    out.push(h('button',{class:'ticket',type:'button',onclick:function(){checklistEspacoVer(c)}},h('div',{class:'space-between'},h('div',null,h('strong',{text:c.espacoNome}),h('div',{class:'tdesc',text:fmtDate(c.em)+' · '+(c.porNome||'')})),h('span',{class:'badge '+(pr?'warn':'ok'),text:pr?pr+' ressalva'+(pr>1?'s':''):'Tudo OK'}))))});
+  m.replaceChildren.apply(m,out);
+}
+mod({k:'checklist',ic:'✅',t:'Checklist de espaços',see:['PORTEIRO'],edit:[],custom:drawChecklistEspaco});
+
 /* ---------- versão simplificada: Portale Mattino, só Administração, Manutenção e Portaria; módulos Piscinas e Prazos obrigatórios ---------- */
 function condoInfo(){
   var mp=parMapa('piscinas'),ps=Object.keys(mp).map(function(n){return n+' '+mp[n]}).join(' · ');
@@ -3695,7 +3733,7 @@ function condoInfo(){
   var KEEP=['tickets','m:piscinas','m:obrigacoes','m:config','m:preventivas','m:rondas','m:reservas','m:estoque','m:contratos','m:garantias','m:fornecedores'];
   ALL_ROLES=['ADMINISTRACAO','MANUTENCISTA','PORTEIRO'];
   Object.keys(DEMO).forEach(function(k){if(ALL_ROLES.indexOf(DEMO[k].r[0])<0)delete DEMO[k]});
-  MENU_ALL=[['Operação',['tickets','m:preventivas','m:rondas','m:reservas','m:piscinas']],
+  MENU_ALL=[['Operação',['tickets','m:preventivas','m:rondas','m:checklist','m:reservas','m:piscinas']],
     ['Cadastro mestre',['m:ativos','m:etiquetas','m:espacos','m:estoque']],
     ['Documentação',['m:contratos','m:garantias','m:obrigacoes','m:fornecedores']],
     ['Indicadores',['m:saude','m:tendencias','m:recorrencia','m:desempenho']],
@@ -3712,7 +3750,7 @@ function condoInfo(){
   efEd=function(role_,d){return (d.edit||[]).indexOf(role_)>=0};
   /* reservas e vistorias dos espaços: a Administração registra e aprova; a Portaria faz a vistoria com o checklist do espaço */
   MODS.reservas.see=['PORTEIRO'];
-  var T={ADMINISTRACAO:['m:preventivas','m:rondas','m:reservas','m:piscinas','m:obrigacoes'],MANUTENCISTA:['m:preventivas','m:piscinas','m:obrigacoes','m:estoque'],PORTEIRO:['m:rondas','m:reservas','m:piscinas','m:obrigacoes']};
+  var T={ADMINISTRACAO:['m:preventivas','m:rondas','m:checklist','m:reservas','m:piscinas','m:obrigacoes'],MANUTENCISTA:['m:preventivas','m:piscinas','m:obrigacoes','m:estoque'],PORTEIRO:['m:checklist','m:rondas','m:reservas','m:piscinas','m:obrigacoes']};
   atalhos=function(r){
     var o=[sectionTitle('Atalhos')];
     (T[r]||[]).forEach(function(k){var d=MODS[k.slice(2)];if(d&&canSee(d,r))o.push(bigAction(d.ic,d.t,'',function(){S.tab=k;draw()}))});
