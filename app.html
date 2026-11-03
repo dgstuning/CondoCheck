@@ -3701,6 +3701,9 @@ function condoInfo(){
   MODS.obrigacoes.t='Prazos obrigatórios';
   /* piscinas: manutenção registra; portaria e administração consultam */
   MODS.piscinas.see=['MANUTENCISTA','PORTEIRO'];MODS.piscinas.edit=['MANUTENCISTA'];
+  /* quem vê e quem edita vale o que está no código; a tabela de permissões salva no banco (herdada do PredialFlow) não manda mais */
+  efVer=function(role_,d){return (d.see||[]).indexOf(role_)>=0};
+  efEd=function(role_,d){return (d.edit||[]).indexOf(role_)>=0};
   var T={ADMINISTRACAO:['m:piscinas','m:obrigacoes'],MANUTENCISTA:['m:piscinas','m:obrigacoes'],PORTEIRO:['m:piscinas','m:obrigacoes']};
   atalhos=function(r){
     var o=[sectionTitle('Atalhos')];
