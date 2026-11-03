@@ -15,6 +15,7 @@ Arquivo único (`app.html`, com HTML, CSS e JavaScript). Roda como **artefato Cl
 - **Piscinas:** registro de pH, cloro, alcalinidade, reagentes e visto do gerente. Leitura fora do ideal abre chamado sozinha.
 - **Equipe e custo-hora:** a Administração cadastra os funcionários em Pessoas / Funcionários (＋ Cadastrar pessoa → Funcionário → perfil Manutenção) e, na mesma tela, informa o salário, os encargos e as horas por mês de cada um; o sistema calcula o valor da hora e usa no custo de mão de obra dos chamados e no desempenho da equipe. Os valores ficam numa coleção própria (`rh`), carregada só para a Administração.
 - **Controle de EPI:** ficha de entrega por funcionário (item, nº do CA, tamanho, quantidade, data, validade, devolução), com aviso na tela inicial 30 dias antes de vencer. A Administração registra; a Manutenção vê só o seu. A verificação de EPI ao assumir um chamado continua.
+- **Quem vê o quê:** em Configurações → “Quem vê o quê”, a Administração desmarca os módulos que a Manutenção ou a Portaria não devem ver (por exemplo, Orçamentos). Some do menu, da tela inicial e dos avisos.
 - **Compras:** Orçamentos e Cotações (Administração e Manutenção), além de Estoque com lista de compras, importar lista (Excel/CSV, só a Administração) e exportar. Também: Biblioteca de documentos, Centro de Custos, Calendário, Automações e Auditoria.
 - **Cadastro mestre:** equipamentos, etiquetas QR, espaços e estoque.
 - **Contratos, Garantias e Fornecedores.**

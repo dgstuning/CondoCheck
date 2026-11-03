@@ -2700,7 +2700,7 @@ async function aplicaModelo(k){var m=MODELOS_COND[k];try{
   var ex=perfisExtras().slice();(m.extras||[]).forEach(function(e){var d=MODELOS_PERFIL[e];if(d&&!ex.some(function(z){return norm(z.nome)===norm(d.nome)}))ex.push(Object.assign({id:'X_'+norm(d.nome).replace(/[^a-z0-9]+/g,'')+'_'+Date.now().toString(36).slice(-3)},d))});await S.db.doc('ajustes/perfisExtras').set({itens:ex});
   aud('Modelo aplicado: '+m.nome);closeLayer();toast('Modelo aplicado')}catch(e){toast('Sem permissão para aplicar o modelo')}}
 function modelosModal(){modal(h('div',{class:'modalcard'},h('h2',{text:'📦 Modelos de condomínio'}),h('div',{class:'small',text:'Acrescenta categorias e perfis de uma vez. Não apaga nada que você já tenha criado.'}),Object.keys(MODELOS_COND).map(function(k){var m=MODELOS_COND[k];return h('div',{class:'person'},h('strong',{text:m.nome}),h('div',{class:'small',text:m.desc}),h('div',{class:'small',text:'Categorias: '+m.categorias.join(', ')}),h('button',{class:'btn btn-dark',type:'button',onclick:function(){aplicaModelo(k)}},'Aplicar este modelo'))}),h('div',{class:'actions'},h('button',{class:'btn btn-light',type:'button',onclick:closeLayer},'Fechar'))))}
-var CFG_DOCS=['perfisBase','perfisExtras','paineis','listas','rotulos','checklist','piscina','reservas','sla','roteamento','funcoes','privacidade','orcamento','epi'];
+var CFG_DOCS=['perfisBase','perfisExtras','paineis','listas','rotulos','checklist','piscina','reservas','sla','roteamento','funcoes','privacidade','orcamento','epi','modulosOff'];
 function exportaConfig(){if(!S.dl){toast('Download indisponível neste ambiente');return}var o={tipo:'condocheck-config',versao:1,gerado:new Date().toISOString(),condominio:{categorias:S.config.categorias,torres:S.config.torres},permissoes:S.perm||null,ajustes:{}};CFG_DOCS.forEach(function(k){var a=col('ajustes').find(function(x){return x.id===k});if(a){var b=Object.assign({},a);delete b.id;o.ajustes[k]=b}});
   S.dl.save({filename:'config-condominio-'+today()+'.json',data:JSON.stringify(o,null,1)}).then(function(){toast('Configuração salva')},function(){toast('Download cancelado')})}
 function importaConfig(){var inp=h('input',{type:'file',accept:'.json',id:'cfg-f'}),er=h('div',{class:'err',role:'alert'});inp.addEventListener('change',async function(){var f=inp.files[0];if(!f)return;try{var o=JSON.parse(await f.text());if(o.tipo!=='condocheck-config')throw new Error('x');
@@ -2761,7 +2761,7 @@ function drawConfig(r){
     return h('div',{class:'person'},h('strong',{text:t[1]+' '+t[2]}),h('div',{class:'tabs'},rotBox[t[0]].map(function(x){return h('label',{class:'chk',style:'margin:0 10px 0 0'},x[1],ROLE_LABEL[x[0]])})))});
   m.oninput=function(){S.cfgDirty=true};
   m.replaceChildren(modHead({ic:'⚙️',t:'Configurações'}),h('div',{class:'info',text:'Nada daqui fica fixo no código: o mesmo sistema atende outros condomínios trocando estes dados.'}),logoBox(),
-    h('div',{class:'form'},h('h3',{text:'🔑 Perfis e módulos'}),h('div',{class:'small',text:'Escolha o que cada perfil (portaria, limpeza, manutenção, morador…) enxerga e edita, e crie perfis novos.'}),h('div',{class:'actions'},h('button',{class:'btn btn-dark',type:'button',onclick:function(){S.tab='m:permissoes';draw()}},'🔑 Quem vê o quê (módulos por perfil)'),h('button',{class:'btn btn-light',type:'button',onclick:function(){S.tab='m:perfis';draw()}},'🧩 Criar / editar perfis'))),
+    h('div',{class:'form'},h('h3',{text:'🔑 Perfis e módulos'}),h('div',{class:'small',text:'Escolha o que cada perfil (portaria, limpeza, manutenção, morador…) enxerga e edita, e crie perfis novos.'}),h('div',{class:'actions'},h('button',{class:'btn btn-dark',type:'button',onclick:modulosPerfilModal},'🔑 Quem vê o quê (módulos por perfil)'),h('button',{class:'btn btn-light',type:'button',onclick:function(){S.tab='m:perfis';draw()}},'🧩 Criar / editar perfis'))),
     h('div',{class:'form'},h('h3',{text:'Perfil do condomínio'}),inp('nome','Nome do condomínio',S.config.nome),inp('endereco','Endereço',ex.endereco),inp('cnpj','CNPJ',ex.cnpj),inp('telefone','Telefone',ex.telefone),inp('email','E-mail',ex.email),inp('sindico','Síndico',ex.sindico),inp('portaria','Horário da portaria',ex.portaria),
       lines('torres','Torres / blocos (um por linha)',S.config.torres),lines('categorias','Categorias de chamado (uma por linha)',S.config.categorias),
       h('h3',{text:'Prazos de atendimento (SLA, em horas)'}),sl.map(function(s){return [h('label',{for:'cf-s'+s[0],text:s[0]}),s[1]]}),
@@ -3819,6 +3819,21 @@ function drawChecklistEspaco(r){
 }
 mod({k:'checklist',ic:'✅',t:'Checklist de espaços',see:['PORTEIRO'],edit:[],custom:drawChecklistEspaco});
 
+/* ---------- módulos desligados por perfil (Configurações → Quem vê o quê) ---------- */
+function modOff(role_,k){var a=col('ajustes').find(function(x){return x.id==='modulosOff'});return !!(a&&(a[role_]||[]).indexOf(k)>=0)}
+function modulosPerfilModal(){
+  var PERF=['MANUTENCISTA','PORTEIRO'],cur=col('ajustes').find(function(x){return x.id==='modulosOff'})||{},er=h('div',{class:'err',role:'alert'}),box={};
+  var mods=Object.keys(MODS).map(function(k){return MODS[k]}).filter(function(d){return d.k!=='config'&&d.k!=='permissoes'&&d.k!=='perfis'&&d.t&&PERF.some(function(r0){return (d.see||[]).indexOf(r0)>=0})});
+  var menuKs=[];MENU_ALL.forEach(function(g){g[1].forEach(function(k){menuKs.push(k)})});mods=mods.filter(function(d){return menuKs.indexOf('m:'+d.k)>=0});
+  var rows=mods.map(function(d){box[d.k]={};return h('div',{class:'person'},h('strong',{text:d.ic+' '+d.t}),h('div',{class:'tabs'},PERF.filter(function(r0){return (d.see||[]).indexOf(r0)>=0}).map(function(r0){var c=h('input',{type:'checkbox','aria-label':d.t+' — '+ROLE_LABEL[r0]});c.checked=(cur[r0]||[]).indexOf(d.k)<0;box[d.k][r0]=c;return h('label',{class:'chk',style:'margin:0 10px 0 0'},c,ROLE_LABEL[r0])})))});
+  modal(h('div',{class:'modalcard'},h('h2',{text:'🔑 Quem vê o quê'}),
+    h('div',{class:'info',text:'Desmarque o módulo que o perfil não deve ver (some do menu, da tela inicial e dos avisos). A Administração sempre vê tudo.'}),
+    h('div',{class:'form'},rows),er,
+    h('div',{class:'actions'},h('button',{class:'btn btn-light',type:'button',onclick:closeLayer},'Cancelar'),h('button',{class:'btn btn-dark',type:'button',onclick:async function(){
+      var o={};PERF.forEach(function(r0){o[r0]=[]});mods.forEach(function(d){PERF.forEach(function(r0){var c=box[d.k][r0];if(c&&!c.checked)o[r0].push(d.k)})});
+      try{await S.db.doc('ajustes/modulosOff').set(o);aud('Módulos por perfil alterados');closeLayer();toast('Salvo');draw()}catch(e){er.textContent='Somente o Editor do artefato pode salvar.'}}},'Salvar'))));
+}
+
 /* ---------- RH (salário e custo-hora, só Administração) e Controle de EPI ---------- */
 COLS.push('epiEntregas');
 var RH={};
@@ -3884,8 +3899,8 @@ function condoInfo(){
   MODS.piscinas.see=['MANUTENCISTA'];MODS.piscinas.edit=['MANUTENCISTA'];
   MODS.calendario.see=['MANUTENCISTA'];/* o calendário traz os prazos obrigatórios: não vai para a Portaria */
   /* quem vê e quem edita vale o que está no código; a tabela de permissões salva no banco (herdada do PredialFlow) não manda mais */
-  efVer=function(role_,d){var b=ROLE_BASE[role_]||role_,c=CUSTOM_DEF[role_];return (d.see||[]).indexOf(b)>=0||!!(c&&(c.ver||[]).indexOf(d.k)>=0)};
-  efEd=function(role_,d){var b=ROLE_BASE[role_]||role_,c=CUSTOM_DEF[role_];return (d.edit||[]).indexOf(b)>=0||!!(c&&(c.ed||[]).indexOf(d.k)>=0)};
+  efVer=function(role_,d){var b=ROLE_BASE[role_]||role_,c=CUSTOM_DEF[role_];return ((d.see||[]).indexOf(b)>=0||!!(c&&(c.ver||[]).indexOf(d.k)>=0))&&!modOff(b,d.k)};
+  efEd=function(role_,d){var b=ROLE_BASE[role_]||role_,c=CUSTOM_DEF[role_];return ((d.edit||[]).indexOf(b)>=0||!!(c&&(c.ed||[]).indexOf(d.k)>=0))&&!modOff(b,d.k)};
   /* reservas e vistorias dos espaços: a Administração registra e aprova; a Portaria faz a vistoria com o checklist do espaço */
   MODS.reservas.see=['PORTEIRO'];
   var T={ADMINISTRACAO:['m:preventivas','m:rondas','m:checklist','m:reservas','m:piscinas','m:obrigacoes','m:estoque','m:orcamentos','m:epictl'],MANUTENCISTA:['m:preventivas','m:piscinas','m:obrigacoes','m:estoque','m:orcamentos','m:epictl'],PORTEIRO:['m:checklist','m:rondas','m:reservas']};
