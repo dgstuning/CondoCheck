@@ -494,7 +494,7 @@ function drawNew(r){
   var pri=h('select',{id:'f-pri'},opt(PRIOR)),sev=h('select',{id:'f-sev'},opt(SEVER,'Média'));
   var asg=null;
   if(r==='ADMINISTRACAO'){var ms=Object.keys(S.perfis).filter(function(u){return (S.perfis[u].papeis||[]).some(function(x){return (ROLE_BASE[x]||x)==='MANUTENCISTA'})});if(String(S.uid||'').indexOf('demo-')===0&&ms.indexOf('demo-manutencao')<0)ms.push('demo-manutencao');
-    asg=h('select',{id:'f-asg'},h('option',{value:'LIVRE',text:'Livre para a equipe'}),ms.map(function(u){return h('option',{value:u,text:nameOf(u,'Manutencista')})}),h('option',{value:'LIMPEZA',text:'Encaminhar à Limpeza'}))}
+    asg=h('select',{id:'f-asg'},h('option',{value:'LIVRE',text:'Livre para a equipe'}),ms.map(function(u){return h('option',{value:u,text:nameOf(u,'Manutencista')})}))}
   var stat=h('div',{class:'photo-selected',id:'f-fstat',text:S.form.file?'Foto selecionada: '+S.form.file.name:'Nenhuma foto selecionada.'}),prev=h('div');
   var pick=function(cap){return h('input',{type:'file',accept:'image/*',hidden:true,capture:cap?'environment':null,onchange:function(e){var f=e.target.files[0];if(!f)return;S.form.file=f;stat.textContent='Foto selecionada: '+f.name;
     prev.replaceChildren(h('img',{class:'photo',alt:'Pré-visualização da foto',src:URL.createObjectURL(f)}))}})};
@@ -588,7 +588,7 @@ function showReturn(id){var s=h('select',{id:'ret'},opt(LIST('retornoMotivos',RE
     h('div',{class:'actions'},back(),h('button',{class:'btn btn-dark',type:'button',onclick:function(){var v=s.value,o=ob.value.trim().slice(0,300);drawDetail();returnTicket(id,v,o)}},'Reabrir chamado'))))}
 function showAssign(id){
   var ms=Object.keys(S.perfis).filter(function(u){return (S.perfis[u].papeis||[]).some(function(x){return (ROLE_BASE[x]||x)==='MANUTENCISTA'})});if(String(S.uid||'').indexOf('demo-')===0&&ms.indexOf('demo-manutencao')<0)ms.push('demo-manutencao');
-  var s=h('select',{id:'alvo'},h('option',{value:'LIVRE',text:'Livre para a equipe'}),ms.map(function(u){return h('option',{value:u,text:nameOf(u,'Manutencista')})}),h('option',{value:'LIMPEZA',text:'Encaminhar à Limpeza'}));
+  var s=h('select',{id:'alvo'},h('option',{value:'LIVRE',text:'Livre para a equipe'}),ms.map(function(u){return h('option',{value:u,text:nameOf(u,'Manutencista')})}));
   modal(h('div',{class:'modalcard'},h('h2',{text:'👷 Atribuir chamado'}),h('div',{class:'form'},h('label',{for:'alvo',text:'Quem atende?'}),s),
     h('div',{class:'actions'},back(),h('button',{class:'btn btn-dark',type:'button',onclick:function(){var v=s.value;drawDetail();assignTicket(id,v)}},'Salvar'))));
 }
@@ -671,7 +671,7 @@ mod({k:'custos',ic:'💰',t:'Centro de Custos',coll:'custos',see:['SINDICO','MAN
     return h('div',null,h('div',{class:'kpis'},h('div',{class:'kpi'},h('div',{class:'v',text:money(t)}),h('div',{class:'l',text:'💰 Neste mês'})),h('div',{class:'kpi'},h('div',{class:'v',text:money(all)}),h('div',{class:'l',text:'📊 Total registrado'}))),
       ks.length?h('div',{class:'panel'},h('h3',{text:'Por tipo'}),ks.map(function(k){var u=h('u');u.style.width=Math.round(by[k]/mx*100)+'%';return h('div',{class:'bar-r'},h('span',{text:k}),h('i',null,u),h('b',{text:String(Math.round(by[k]))}))})):null)}});
 mod({k:'preventivas',ic:'🔄',t:'Preventivas',coll:'preventivas',see:['SINDICO','MANUTENCISTA','LIMPEZA'],edit:[],
-  f:[['titulo','Rotina','t',null,1],['local','Local','t'],['ativoRef','Equipamento (opcional)','t'],['frequencia','Frequência','s',['Semanal','Quinzenal','Mensal','Trimestral','Semestral','Anual']],['proxima','Próxima execução','d',null,1,'hoje'],['fila','Quem executa','s',['Manutenção','Limpeza']],['categoria','Categoria do chamado','s',CATS],['obs','O que verificar','a']],
+  f:[['titulo','Rotina','t',null,1],['local','Local','t'],['ativoRef','Equipamento (opcional)','t'],['frequencia','Frequência','s',['Semanal','Quinzenal','Mensal','Trimestral','Semestral','Anual']],['proxima','Próxima execução','d',null,1,'hoje'],['fila','Quem executa','s',['Manutenção']],['categoria','Categoria do chamado','s',CATS],['obs','O que verificar','a']],
   sort:function(a,b){return String(a.proxima).localeCompare(String(b.proxima))},
   filter:function(d,r){return r==='LIMPEZA'?d.fila==='Limpeza':r==='MANUTENCISTA'?d.fila!=='Limpeza':true},
   ti:function(d){return d.titulo},su:function(d){return [d.local,d.frequencia,'próxima '+fmtD(d.proxima)].filter(Boolean).join(' · ')},
