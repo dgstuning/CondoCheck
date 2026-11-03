@@ -1,0 +1,524 @@
+{
+ "_leia-me": "Dados do Condomínio Portale Mattino: espaços reserváveis e o checklist de vistoria de cada um. Espaços vão na coleção \"espacos\" (um documento por id) e o checklist no documento \"ajustes/checklist\".",
+ "espacos": [
+  {
+   "id": "pm-lounge-gourmet",
+   "nome": "Lounge Gourmet",
+   "tipo": "Área comum",
+   "torre": "—",
+   "reservavel": "Sim"
+  },
+  {
+   "id": "pm-salao-de-festas-adulto",
+   "nome": "Salão de Festas Adulto",
+   "tipo": "Salão de festas",
+   "torre": "—",
+   "reservavel": "Sim"
+  },
+  {
+   "id": "pm-salao-de-festas-infantil",
+   "nome": "Salão de Festas Infantil",
+   "tipo": "Salão de festas",
+   "torre": "—",
+   "reservavel": "Sim"
+  },
+  {
+   "id": "pm-churrasqueira-gourmet",
+   "nome": "Churrasqueira Gourmet",
+   "tipo": "Churrasqueira",
+   "torre": "—",
+   "reservavel": "Sim"
+  },
+  {
+   "id": "pm-churrasqueira-quadra",
+   "nome": "Churrasqueira Quadra",
+   "tipo": "Churrasqueira",
+   "torre": "—",
+   "reservavel": "Sim"
+  }
+ ],
+ "checklist": {
+  "porEspaco": {
+   "Lounge Gourmet": [
+    {
+     "n": "Paredes limpas e pintadas",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Portas em perfeitas condições",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Vidros e janelas em perfeitas condições",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Objetos decorativos; 02 garrafas em porcelana; 02 apoios de livros; 01 livro",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Pufe, formato chaise, em estofado marrom",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Almofadas com estampas diversas",
+     "q": "3",
+     "foto": false
+    },
+    {
+     "n": "01 mesa de apoio; 03 vasos decorativos; 01 livro",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Poltronas em estofado bege",
+     "q": "3",
+     "foto": false
+    },
+    {
+     "n": "01 mesa de apoio; 01 vaso decorativo com rolhas; 02 relógios; 01 livro",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "01 bancada branca; 03 livros",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "02 mesas; 08 poltronas; 08 luminárias de teto",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Fruteira decorativa em cobre (redonda)",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Fruteira decorativa em cobre (alongada)",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Frigobar",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "TV LCD 42\"",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Cuba em inox com torneira cromada",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Interfone",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Ar-condicionado de teto, branco",
+     "q": "2",
+     "foto": false
+    },
+    {
+     "n": "Micro-ondas",
+     "q": "1",
+     "foto": false
+    }
+   ],
+   "Salão de Festas Adulto": [
+    {
+     "n": "Paredes limpas e pintadas",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Banheiros em perfeitas condições de uso",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Cozinha em perfeitas condições de uso",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Portas em perfeitas condições",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Vidros e janelas em perfeitas condições",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Cooktop preto, Electrolux, 4 bocas de indução",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Frigobar preto com porta de vidro, Brastemp",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Adega de vinhos preta, Cadence",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Geladeira inox, Brastemp",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Freezer Philco",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Micro-ondas inox, Brastemp",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "3 panelas Tramontina de indução com tampa; 1 cozi vapore (escorredor de macarrão); 1 frigideira; 1 pegador de massa",
+     "q": "6",
+     "foto": false
+    },
+    {
+     "n": "Coifa inox",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Bancos em madeira",
+     "q": "5",
+     "foto": false
+    },
+    {
+     "n": "Pufes em estofado bege",
+     "q": "3",
+     "foto": false
+    },
+    {
+     "n": "Poltronas estofadas azul claro",
+     "q": "3",
+     "foto": false
+    },
+    {
+     "n": "Poltronas com estampa azul",
+     "q": "3",
+     "foto": false
+    },
+    {
+     "n": "3 mesas; 11 bancos",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Mesas de apoio em madeira (centro)",
+     "q": "2",
+     "foto": false
+    },
+    {
+     "n": "Mesa de apoio em madeira",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "01 aparador; 01 banco; 01 vaso de cobre; 02 molduras; 01 vaso redondo de madeira; 01 espiral branco decorativo",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Luminárias de teto",
+     "q": "3",
+     "foto": false
+    },
+    {
+     "n": "Sofá fixo com 8 lugares",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Ar-condicionado de teto",
+     "q": "3",
+     "foto": false
+    },
+    {
+     "n": "13 livros; 3 vasos de vidro; 2 vasos de cerâmica branca; 1 escultura \"moça pensando\"; 1 vaso de espelho quadrado; 1 \"M\" de madeira; 1 vaso quadrado de vidro; 1 vaso espelhado; 1 bandeja; 11 quadros",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Interfone branco",
+     "q": "1",
+     "foto": false
+    }
+   ],
+   "Salão de Festas Infantil": [
+    {
+     "n": "Paredes limpas e pintadas",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Banheiros em perfeitas condições de uso",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Cozinha em perfeitas condições de uso",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Portas em perfeitas condições",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Vidros e janelas em perfeitas condições",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Cooktop preto, Electrolux, 4 bocas de indução",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Micro-ondas inox, 30 litros, Brastemp",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Conjunto com 2 cubas em inox; 1 torneira cromada",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Geladeira inox, Brastemp",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Freezer Philco",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Forno elétrico inox, Electrolux",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Depurador de ar inox, Suggar",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "3 panelas Tramontina de indução com tampa; 1 cozi vapore (escorredor de macarrão); 1 frigideira; 1 pegador de massa",
+     "q": "6",
+     "foto": false
+    },
+    {
+     "n": "Almofadas brancas",
+     "q": "10",
+     "foto": false
+    },
+    {
+     "n": "Mesas de apoio em madeira",
+     "q": "4",
+     "foto": false
+    },
+    {
+     "n": "Sofá fixo com 20 lugares, estofado branco",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Poltronas em estofado bege",
+     "q": "3",
+     "foto": false
+    },
+    {
+     "n": "Bancos brancos",
+     "q": "3",
+     "foto": false
+    },
+    {
+     "n": "Pufes de cores diversas",
+     "q": "6",
+     "foto": false
+    },
+    {
+     "n": "Vasos de vidro decorativos, coloridos e de tamanhos diversos",
+     "q": "6",
+     "foto": false
+    },
+    {
+     "n": "Banco fixo branco para 5 lugares",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Mesas de apoio coloridas em madeira",
+     "q": "6",
+     "foto": false
+    },
+    {
+     "n": "Luminárias de teto",
+     "q": "6",
+     "foto": false
+    },
+    {
+     "n": "Mesas de centro retangulares brancas",
+     "q": "2",
+     "foto": false
+    },
+    {
+     "n": "Conjunto decorativo composto por xícaras com plantas",
+     "q": "7",
+     "foto": false
+    },
+    {
+     "n": "Mesa de apoio branca",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Cuba em porcelana branca; 1 torneira cromada",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Interfone branco",
+     "q": "1",
+     "foto": false
+    }
+   ],
+   "Churrasqueira Gourmet": [
+    {
+     "n": "Paredes limpas e pintadas",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Churrasqueira com coifa e grelha",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Mesas",
+     "q": "3",
+     "foto": false
+    },
+    {
+     "n": "Cadeiras",
+     "q": "12",
+     "foto": false
+    },
+    {
+     "n": "Banquetas",
+     "q": "4",
+     "foto": false
+    },
+    {
+     "n": "Bancada de granito",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Forno de pizza",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Cuba em inox com torneira cromada",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Geladeira Brastemp",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Freezer Philco",
+     "q": "1",
+     "foto": false
+    }
+   ],
+   "Churrasqueira Quadra": [
+    {
+     "n": "Paredes limpas e pintadas",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Banheiros limpos",
+     "q": "",
+     "foto": false
+    },
+    {
+     "n": "Churrasqueira com coifa e grelha",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Cadeiras",
+     "q": "21",
+     "foto": false
+    },
+    {
+     "n": "Banquetas",
+     "q": "3",
+     "foto": false
+    },
+    {
+     "n": "Bancada de granito",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Forno de pizza",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Cuba em inox com torneira cromada",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Geladeira Brastemp",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Freezer Philco",
+     "q": "1",
+     "foto": false
+    },
+    {
+     "n": "Mesas",
+     "q": "6",
+     "foto": false
+    }
+   ]
+  }
+ }
+}

@@ -10,13 +10,17 @@ Arquivo único (`app.html`, com HTML, CSS e JavaScript). Roda como **artefato Cl
 - **Chamados:** abrir, assumir, pausar, concluir, com histórico. Ao assumir, a Manutenção faz a verificação de EPI (a lista é ajustada em Configurações).
 - **Preventivas:** rotinas programadas que geram chamado. A Administração cadastra; a Manutenção vê e gera o chamado.
 - **Rondas:** a Administração cria os roteiros; a Portaria faz o checklist e cada ponto com problema abre um chamado na hora.
+- **Reservas / Vistorias:** a Administração registra e aprova a reserva de um espaço; a Portaria faz a vistoria de entrada e de saída com o checklist daquele espaço, com assinaturas. Ressalvas viram possíveis chamados.
 - **Piscinas:** registro de pH, cloro, alcalinidade, reagentes e visto do gerente. Leitura fora do ideal abre chamado sozinha.
 - **Cadastro mestre:** equipamentos, etiquetas QR, espaços e estoque.
 - **Contratos, Garantias e Fornecedores.**
 - **Obrigações e Conformidade:** AVCB, extintores, elevadores, reservatórios, dedetização, seguro predial e outros, com alertas de 90, 60 e 30 dias. A Administração cadastra; Manutenção e Portaria consultam.
 - **Só para a Administração:** Saúde da Manutenção, Tendências Executivas, Reincidências, Desempenho da equipe, Central de Relatórios, Pessoas / Funcionários e Configurações.
 - **Quem vê e edita** segue as regras do código. A tabela de permissões salva no banco pelo PredialFlow é ignorada.
-- **Portale Mattino já carregado:** 8 torres (Gênova, Trivento, Turim, Roma, Tivoli, Modena, Positano, Savona) e piscinas Adulto (143 mil litros) e Infantil (17 mil litros).
+- **Portale Mattino já carregado:** 8 torres (Gênova, Trivento, Turim, Roma, Tivoli, Modena, Positano, Savona) e piscinas Adulto (143 mil litros) e Infantil (17 mil litros) vêm dentro do código.
+
+## Dados do banco
+O app lê espaços e checklists do banco. Um banco novo começa vazio, então as telas de Espaços e de vistoria aparecem sem nada. Os dados do Portale Mattino estão em `dados/portale-mattino.json`: 5 espaços (Lounge Gourmet, Salão de Festas Adulto, Salão de Festas Infantil, Churrasqueira Gourmet, Churrasqueira Quadra) e o checklist de vistoria de cada um. Os espaços vão na coleção `espacos`, um documento por id, e o checklist no documento `ajustes/checklist`. Horários, capacidade e regras de reserva de cada espaço ainda não estão cadastrados.
 
 ## Origem
 Derivado do PredialCheck (`dgstuning/predialcheck`, branch `simplificado-portale-mattino`), reduzido aos módulos acima. Os demais módulos do PredialFlow continuam escondidos no código e serão podados aos poucos.
