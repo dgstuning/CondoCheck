@@ -1588,8 +1588,9 @@ function avisaMorador(c,t){
     h('div',{class:'actions'},h('a',{class:'btn btn-ok',href:'https://wa.me/'+(f?(f.length<=11?'55'+f:f):'')+'?text='+encodeURIComponent(msg),target:'_blank',rel:'noopener'},'WhatsApp'),
       h('a',{class:'btn btn-light',href:'mailto:?subject='+encodeURIComponent('Chamado '+shortId(t))+'&body='+encodeURIComponent(msg),target:'_blank',rel:'noopener'},'E-mail')),
     h('div',{class:'small',text:f?'Vai para o telefone cadastrado da unidade.':'Telefone da unidade não cadastrado: você escolhe o contato ao abrir o WhatsApp.'})))}
+function custoHoraDe(uid){var r=(S.col.rh||[]).find(function(x){return x.id==='u_'+uid});if(r&&Number(r.custoHora)>0)return Number(r.custoHora);return Number((S.perfis[uid]||{}).custoHora)||0}
 function custoChamado(t){var ref=shortId(t),mat=col('custos').filter(function(x){return x.chamadoRef===ref}).reduce(function(a,x){return a+(Number(x.valor)||0)},0),
-  p=S.perfis[t.atribuidoAId]||{},ch=Number(p.custoHora)||0,horas=activeMs(t)/36e5,mo=Math.round(horas*ch*100)/100;
+  ch=custoHoraDe(t.atribuidoAId),horas=activeMs(t)/36e5,mo=Math.round(horas*ch*100)/100;
   return {mat:mat,mo:mo,horas:horas,custoHora:ch,total:Math.round((mat+mo)*100)/100}}
 function custoTotais(list){var a={mat:0,mo:0,total:0};list.forEach(function(t){var c=custoChamado(t);a.mat+=c.mat;a.mo+=c.mo;a.total+=c.total});a.total=Math.round(a.total*100)/100;return a}
 function custoRank(list){var tor={},eq={},out=[];list.forEach(function(t){var c=custoChamado(t).total;if(!c)return;var tn=(S.config.torres||[]).find(function(x){return String(t.local||'').toLowerCase().indexOf(x.toLowerCase())>=0});tn=tn||'Áreas comuns / outros';tor[tn]=(tor[tn]||0)+c;
@@ -3554,7 +3555,7 @@ function funcoesBloco(){
 }
 function rankingBlock(){
   var by={};S.tickets.filter(function(t){return t.status==='Concluído'}).forEach(function(t){var u=t.atribuidoAId||((t.historico||[]).filter(function(e){return e.tipo==='CONCLUIR'}).slice(-1)[0]||{}).por;if(!u)return;var o=by[u]||(by[u]={u:u,h:0,n:0});o.h+=(t.tempoAtivoMs||0)/36e5;o.n++});
-  var rows=Object.keys(by).map(function(k){var o=by[k],p=S.perfis[k]||{},ch=Number(p.custoHora)||0;o.custo=ch*o.h;o.ch=ch;return o});
+  var rows=Object.keys(by).map(function(k){var o=by[k],ch=custoHoraDe(k);o.custo=ch*o.h;o.ch=ch;return o});
   var out=[sectionTitle('🏆 Rankings')];if(!rows.length){out.push(h('div',{class:'info',text:'Os rankings aparecem quando houver chamados concluídos.'}));return out}
   var mapH={},mapN={};rows.forEach(function(o){mapH[nameOf(o.u,'Pessoa')]=Math.round(o.h*10)/10;mapN[nameOf(o.u,'Pessoa')]=o.n});
   out.push(h('div',{class:'panel'},h('h3',{text:'⏱ Horas trabalhadas'}),barsOf(mapH,function(v){return v+' h'})),h('div',{class:'panel'},h('h3',{text:'✅ Serviços concluídos'}),barsOf(mapN)));
@@ -3625,6 +3626,7 @@ function startSession(){
   S.subs.push(S.db.collection('perfis').onSnapshot(function(s){S.perfis=mapDocs(s);draw()},function(){}));
   useCols();
   if(adm&&!S.autoDone){S.autoDone=true;setTimeout(function(){var c=col('ajustes').find(function(x){return x.id==='automacoes'})||{};if(c.ultima!==today())rodarAutos(false).catch(function(){})},5000)}
+  if(adm)S.subs.push(S.db.collection('rh').onSnapshot(function(sn){S.col.rh=sn.docs.map(function(d){return Object.assign({},d.data(),{id:d.id})});drawSoon()},function(){S.col.rh=S.col.rh||[]}));
   if(adm)S.subs.push(S.db.collection('pedidos').onSnapshot(function(s){S.pedidos=mapDocs(s);draw()},function(){}));
   draw();
 }
@@ -3817,6 +3819,46 @@ function drawChecklistEspaco(r){
 }
 mod({k:'checklist',ic:'✅',t:'Checklist de espaços',see:['PORTEIRO'],edit:[],custom:drawChecklistEspaco});
 
+/* ---------- RH (salário e custo-hora, só Administração) e Controle de EPI ---------- */
+COLS.push('epiEntregas');
+var RH={};
+RH.pessoas=function(){var o=[];
+  Object.keys(S.perfis).forEach(function(id){var p=S.perfis[id],ps=p.papeis||[];if(ps.some(function(x){return x!=='MORADOR'&&x!=='ADMINISTRACAO'}))o.push({key:'u_'+id,nome:nameOf(id,'Pessoa'),funcao:ps.map(function(x){return ROLE_LABEL[x]||x}).join(', ')})});
+  if(String(S.uid||'').indexOf('demo-')===0)Object.keys(DEMO).forEach(function(k){var d=DEMO[k];if(d.r[0]!=='ADMINISTRACAO')o.push({key:'u_demo-'+k,nome:d.n,funcao:ROLE_LABEL[d.r[0]]||d.r[0]})});
+  col('acessos').forEach(function(a){var p0=(a.papeis||[])[0];if(p0&&p0!=='MORADOR'&&a.nome)o.push({key:'a_'+a.id,nome:a.nome,funcao:a.funcao||ROLE_LABEL[p0]||''})});
+  return o};
+RH.reg=function(key){return (S.col.rh||[]).find(function(x){return x.id===key})};
+RH.calc=function(sal,enc,hm){sal=Number(sal)||0;enc=Number(enc)||0;hm=Number(hm)||220;return hm>0?Math.round(sal*(1+enc/100)/hm*100)/100:0};
+RH.modal=function(p){
+  var r=RH.reg(p.key)||{},er=h('div',{class:'err',role:'alert'}),
+    sal=h('input',{type:'number',min:'0',step:'0.01',id:'rh-s',value:r.salario!=null?r.salario:'',placeholder:'Ex.: 2500'}),
+    enc=h('input',{type:'number',min:'0',max:'300',step:'0.1',id:'rh-e',value:r.encargos!=null?r.encargos:'0'}),
+    hm=h('input',{type:'number',min:'1',max:'744',step:'1',id:'rh-h',value:r.horasMes||220}),
+    out=h('div',{class:'info'}),up=function(){var c=RH.calc(sal.value,enc.value,hm.value);out.textContent='Custo-hora: '+(c?money(c):'—')+(c?' (salário × (1 + encargos) ÷ horas por mês)':'')};
+  [sal,enc,hm].forEach(function(i){i.addEventListener('input',up)});up();
+  modal(h('div',{class:'modalcard'},h('h2',{text:'💰 Salário e custo-hora — '+p.nome}),
+    h('div',{class:'info',text:'Usado só para estimar o custo da mão de obra de cada chamado (horas em atendimento × custo-hora). Só a Administração enxerga estes valores.'}),
+    h('div',{class:'form'},h('label',{for:'rh-s',text:'Salário mensal (R$)'}),sal,h('label',{for:'rh-e',text:'Encargos e benefícios (% sobre o salário)'}),enc,h('label',{for:'rh-h',text:'Horas trabalhadas por mês'}),hm,out),er,
+    h('div',{class:'actions'},h('button',{class:'btn btn-light',type:'button',onclick:closeLayer},'Cancelar'),
+      r.id?h('button',{class:'btn btn-danger-soft',type:'button',onclick:async function(){try{await S.db.doc('rh/'+p.key).delete();aud('Salário removido: '+p.nome);closeLayer();toast('Removido')}catch(e){er.textContent='Sem permissão.'}}},'Remover'):null,
+      h('button',{class:'btn btn-dark',type:'button',onclick:async function(){var c=RH.calc(sal.value,enc.value,hm.value);if(!(Number(sal.value)>0)||!c){er.textContent='Informe o salário e as horas por mês.';return}
+        try{await S.db.doc('rh/'+p.key).set({nome:p.nome,funcao:p.funcao,salario:Number(sal.value),encargos:Number(enc.value)||0,horasMes:Number(hm.value)||220,custoHora:c,em:Date.now()});aud('Salário e custo-hora atualizados: '+p.nome);closeLayer();toast('Custo-hora: '+money(c))}catch(e){er.textContent='Sem permissão.'}}},'Salvar'))));
+};
+RH.bloco=function(){
+  var l=RH.pessoas(),o=[sectionTitle('💰 Salário e custo-hora da equipe'),h('div',{class:'small',text:'Informe o salário de cada funcionário para o sistema calcular o valor da hora e o custo da mão de obra nos chamados. Só a Administração vê.'})];
+  if(!l.length)o.push(h('div',{class:'info',text:'Cadastre os funcionários (＋ Cadastrar pessoa → Funcionário) para informar o salário.'}));
+  l.forEach(function(p){var r=RH.reg(p.key);o.push(h('div',{class:'person'},h('div',{class:'space-between'},h('strong',{text:'👷 '+p.nome}),h('span',{class:'badge '+(r?'ok':''),text:r?money(r.custoHora)+' / h':'Sem salário'})),
+    h('div',{class:'small',text:[p.funcao,r?'Salário '+money(r.salario)+' · '+r.horasMes+' h/mês'+(r.encargos?' · encargos '+r.encargos+'%':''):''].filter(Boolean).join(' · ')}),
+    h('div',{class:'actions'},h('button',{class:'btn btn-light',type:'button',onclick:function(){RH.modal(p)}},r?'Editar salário':'Informar salário'))))});
+  return o};
+(function(){var b=drawPessoas;drawPessoas=function(){b.apply(this,arguments);var m=$('#main');if(m&&role()==='ADMINISTRACAO')RH.bloco().forEach(function(n){m.appendChild(n)})}})();
+mod({k:'epictl',ic:'🦺',t:'Controle de EPI',coll:'epiEntregas',see:['MANUTENCISTA'],edit:[],
+  filter:function(d,r){return r==='ADMINISTRACAO'||d.pessoa===S.name},
+  f:[['pessoa','Funcionário','s',function(){return RH.pessoas().map(function(p){return p.nome})},1],['item','EPI entregue','s',function(){return epiCfg().itens.concat(['Outro'])},1],['ca','Nº do CA (certificado de aprovação)','t'],['tamanho','Tamanho / numeração','t'],['qtd','Quantidade','n'],['entrega','Data da entrega','d',null,1],['validade','Validade / troca em','d'],['devolvido','Devolvido / substituído?','s',['Não','Sim']],['obs','Observações','a']],
+  ti:function(d){return d.item+' — '+d.pessoa},
+  su:function(d){return ['entregue em '+fmtD(d.entrega),d.ca?'CA '+d.ca:'',d.validade?'troca até '+fmtD(d.validade):''].filter(Boolean).join(' · ')},
+  bd:function(d){return d.devolvido==='Sim'?['Devolvido','']:(vencBadge(d.validade,30)||['Entregue','ok'])}});
+
 /* ---------- versão simplificada: Portale Mattino, só Administração, Manutenção e Portaria; módulos Piscinas e Prazos obrigatórios ---------- */
 function condoInfo(){
   var mp=parMapa('piscinas'),ps=Object.keys(mp).map(function(n){return n+' '+mp[n]}).join(' · ');
@@ -3833,7 +3875,7 @@ function condoInfo(){
     ['Compras',['m:orcamentos','m:cotacoes']],
     ['Indicadores',['m:saude','m:tendencias','m:recorrencia','m:desempenho']],
     ['Relatórios',['m:relatorios']],
-    ['Acessos',['m:equipe']],
+    ['Acessos',['m:equipe','m:epictl']],
     ['Gestão',['m:calendario','m:custos','m:automacoes','m:auditoria','m:config']]];
   /* obrigações e conformidade (prazos obrigatórios): a Administração cadastra; manutenção e portaria consultam */
   MODS.obrigacoes.see=['MANUTENCISTA'];MODS.obrigacoes.edit=[];
@@ -3846,7 +3888,7 @@ function condoInfo(){
   efEd=function(role_,d){var b=ROLE_BASE[role_]||role_,c=CUSTOM_DEF[role_];return (d.edit||[]).indexOf(b)>=0||!!(c&&(c.ed||[]).indexOf(d.k)>=0)};
   /* reservas e vistorias dos espaços: a Administração registra e aprova; a Portaria faz a vistoria com o checklist do espaço */
   MODS.reservas.see=['PORTEIRO'];
-  var T={ADMINISTRACAO:['m:preventivas','m:rondas','m:checklist','m:reservas','m:piscinas','m:obrigacoes','m:estoque','m:orcamentos'],MANUTENCISTA:['m:preventivas','m:piscinas','m:obrigacoes','m:estoque','m:orcamentos'],PORTEIRO:['m:checklist','m:rondas','m:reservas']};
+  var T={ADMINISTRACAO:['m:preventivas','m:rondas','m:checklist','m:reservas','m:piscinas','m:obrigacoes','m:estoque','m:orcamentos','m:epictl'],MANUTENCISTA:['m:preventivas','m:piscinas','m:obrigacoes','m:estoque','m:orcamentos','m:epictl'],PORTEIRO:['m:checklist','m:rondas','m:reservas']};
   atalhos=function(r){
     var o=[sectionTitle('Atalhos')];
     (T[r]||[]).forEach(function(k){var d=MODS[k.slice(2)];if(d&&canSee(d,r))o.push(bigAction(d.ic,d.t,'',function(){S.tab=k;draw()}))});
@@ -3856,6 +3898,7 @@ function condoInfo(){
   var alertas0=alertas;
   alertas=function(r){
     var a=alertas0(r).filter(function(x){if(KEEP.indexOf(x.tab)<0)return false;var d=String(x.tab).indexOf('m:')===0&&MODS[x.tab.slice(2)];return !d||canSee(d,r)});
+    if(r==='ADMINISTRACAO'||r==='MANUTENCISTA'){col('epiEntregas').filter(function(d){return d.validade&&d.devolvido!=='Sim'&&daysTo(d.validade)!=null&&daysTo(d.validade)<=30&&(r==='ADMINISTRACAO'||d.pessoa===S.name)}).forEach(function(d){a.push({ic:'🦺',txt:'EPI '+d.item+' — '+d.pessoa+(daysTo(d.validade)<0?' — VENCIDO':' vence em '+daysTo(d.validade)+' dias'),tab:'m:epictl',sev:prazoSev(daysTo(d.validade))})})}
     if(r==='MANUTENCISTA'){
       col('obrigacoes').filter(function(d){return daysTo(d.vencimento)!=null&&daysTo(d.vencimento)<=(Number(d.avisarDias)||90)}).forEach(function(d){
         a.push({ic:'🧭',txt:d.nome+(daysTo(d.vencimento)<0?' — VENCIDA':' vence em '+daysTo(d.vencimento)+' dias'),tab:'m:obrigacoes',sev:prazoSev(daysTo(d.vencimento))})})}
