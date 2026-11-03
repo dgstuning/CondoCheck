@@ -927,11 +927,32 @@ function drawRondas(r){
   m.replaceChildren.apply(m,out);
 }
 function modelNovo(x){
-  var n=h('input',{type:'text',id:'rm-n',maxlength:'60',value:x?x.nome:''}),p=h('select',{id:'rm-p'},opt(['Diurna','Noturna','Madrugada','Qualquer horário'],x&&x.periodo)),pt=h('textarea',{id:'rm-pt',placeholder:'Um ponto por linha. Ex.:\nPortão da garagem\nHall Torre A\nCasa de bombas'});pt.value=x?(x.pontos||[]).join('\n'):'';
+  var n=h('input',{type:'text',id:'rm-n',maxlength:'60',value:x?x.nome:''}),p=h('select',{id:'rm-p'},opt(['Diurna','Noturna','Madrugada','Qualquer horário'],x&&x.periodo));
   var at=h('select',{id:'rm-a'},opt(['Sim','Não'],x&&x.ativa)),er=h('div',{class:'err',role:'alert'});
-  modal(h('div',{class:'modalcard'},h('h2',{text:'👀 '+(x?'Editar':'Novo')+' roteiro'}),h('div',{class:'form'},h('label',{for:'rm-n',text:'Nome'}),n,h('label',{for:'rm-p',text:'Período'}),p,h('label',{for:'rm-pt',text:'Pontos a verificar'}),pt,h('button',{class:'btn btn-light',type:'button',style:'margin-top:6px',onclick:function(){var cur=pt.value.split('\n').map(function(x){return x.trim()}).filter(Boolean);col('espacos').forEach(function(e){if(cur.indexOf(e.nome)<0)cur.push(e.nome)});pt.value=cur.join('\n')}},'＋ Incluir espaços cadastrados'),h('label',{for:'rm-a',text:'Ativo'}),at),er,
+  var sel=x?(x.pontos||[]).slice():[],lista=h('div'),cks={},cu=h('input',{type:'text',id:'rm-c',maxlength:'100',placeholder:'Ex.: Gerador — porta fechada'});
+  var SUG=['Caixas d\'água — monitorar nível e vazamentos','Casa de bombas — funcionamento e vazamentos','Gerador — porta fechada','Gerador — nível de combustível','Quadro de força / subestação — porta trancada','Portão da garagem — fechando e travando','Portão de pedestres — fechando e travando','Rampa e garagem — iluminação e obstruções','Casa de máquinas dos elevadores — porta fechada','Elevadores — funcionando','Portas corta-fogo — fechadas e desobstruídas','Escadas de emergência — livres','Extintores e hidrantes — no lugar e lacrados','Iluminação de emergência — funcionando','Abrigo de lixo / resíduos','Cobertura / telhado — acesso trancado','Interfone e câmeras (CFTV) — funcionando','Muros, cercas e perímetro'];
+  var esp=col('espacos').map(function(e){return e.nome}).filter(Boolean).sort(function(u,v){return u.localeCompare(v)}),halls=(S.config.torres||[]).map(function(t){return 'Hall — '+t}),known={};
+  [esp,halls,SUG].forEach(function(l){l.forEach(function(v){known[v]=1})});
+  var usados=[];col('rondaModelos').forEach(function(m){(m.pontos||[]).forEach(function(v){if(!known[v]&&usados.indexOf(v)<0)usados.push(v)})});sel.forEach(function(v){if(!known[v]&&usados.indexOf(v)<0)usados.push(v)});
+  var grupos=[['📍 Espaços do condomínio (todos os cadastrados)',esp],['🏢 Halls das torres',halls],['🔧 Pontos comuns de ronda',SUG],['🕘 Já usados em outros roteiros',usados]].filter(function(g){return g[1].length});
+  var desenha=function(){
+    lista.replaceChildren.apply(lista,sel.length?sel.map(function(v,i){
+      var bt=function(t,l,f,dis){return h('button',{class:'btn btn-light',type:'button','aria-label':l+': '+v,disabled:!!dis,style:'padding:6px 10px',onclick:f},t)};
+      return h('div',{class:'person'},h('div',{class:'space-between'},h('span',{text:(i+1)+'. '+v}),h('div',{style:'display:flex;gap:4px'},
+        bt('↑','Subir',function(){sel.splice(i-1,0,sel.splice(i,1)[0]);desenha()},i===0),bt('↓','Descer',function(){sel.splice(i+1,0,sel.splice(i,1)[0]);desenha()},i===sel.length-1),
+        bt('✕','Remover',function(){sel.splice(i,1);if(cks[v])cks[v].checked=false;desenha()}))))}):[h('div',{class:'info',text:'Nenhum ponto escolhido ainda. Marque na lista abaixo ou escreva o seu próprio ponto.'})])};
+  var add=function(v){v=String(v||'').trim();if(!v||sel.indexOf(v)>=0)return;sel.push(v);if(cks[v])cks[v].checked=true;desenha()};
+  var picker=h('div',{style:'max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:6px 10px'},grupos.map(function(g){
+    return h('div',null,h('div',{class:'section-title',text:g[0]}),g[1].map(function(v){var c=h('input',{type:'checkbox'});c.checked=sel.indexOf(v)>=0;cks[v]=c;
+      c.addEventListener('change',function(){if(c.checked)add(v);else{var i=sel.indexOf(v);if(i>=0)sel.splice(i,1);desenha()}});return h('label',{class:'chk'},c,v)}))}));
+  cu.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();add(cu.value);cu.value=''}});
+  desenha();
+  modal(h('div',{class:'modalcard'},h('h2',{text:'👀 '+(x?'Editar':'Novo')+' roteiro'}),h('div',{class:'form'},h('label',{for:'rm-n',text:'Nome'}),n,h('label',{for:'rm-p',text:'Período'}),p,
+    h('label',{text:'Pontos do roteiro, na ordem da ronda'}),lista,
+    h('label',{for:'rm-c',text:'Escrever um ponto seu (o que a portaria deve verificar)'}),cu,h('button',{class:'btn btn-light',type:'button',style:'margin-top:6px',onclick:function(){add(cu.value);cu.value='';cu.focus()}},'＋ Adicionar ponto'),
+    h('label',{text:'Ou escolha na lista (só marque os que quer na ronda)'}),picker,h('label',{for:'rm-a',text:'Ativo'}),at),er,
     h('div',{class:'actions'},h('button',{class:'btn btn-light',type:'button',onclick:closeLayer},'Cancelar'),h('button',{class:'btn btn-dark',type:'button',onclick:async function(){
-      var pts=pt.value.split('\n').map(function(s){return s.trim()}).filter(Boolean);if(!n.value.trim()||!pts.length){er.textContent='Informe o nome e ao menos um ponto.';return}
+      add(cu.value);cu.value='';var pts=sel.slice();if(!n.value.trim()||!pts.length){er.textContent='Informe o nome e ao menos um ponto.';return}
       var o={nome:n.value.trim(),periodo:p.value,pontos:pts,ativa:at.value};
       try{if(x)await S.db.doc('rondaModelos/'+x.id).set(Object.assign({},o));else await S.db.collection('rondaModelos').add(Object.assign(o,{criadoEm:Date.now()}));aud('Roteiro de ronda salvo: '+o.nome);closeLayer();toast('Roteiro salvo')}catch(e){er.textContent='Sem permissão.'}}},'Salvar'))));
 }
