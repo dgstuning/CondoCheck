@@ -87,6 +87,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}
 .photo{max-width:100%;border-radius:14px;border:1px solid var(--line);margin-top:8px}
 .empty{text-align:center;padding:30px 12px;color:var(--muted)}
 .empty .em{font-size:40px;margin-bottom:6px}.empty b{display:block;color:var(--text);font-size:16px;margin-bottom:3px}
+.savebar{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:60;width:min(420px,calc(100% - 32px));margin:0;box-shadow:0 6px 22px rgba(0,0,0,.35)}
 .bottomnav{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;margin-top:16px;position:sticky;bottom:0;background:var(--screen);padding-top:10px}
 .bottomnav button{border:1px solid transparent;background:transparent;padding:9px 5px;border-radius:11px;font-size:11px;font-weight:850;color:var(--muted);line-height:1.5}
 .bottomnav button.active{background:var(--dark);color:var(--on-dark);border-color:var(--dark)}
@@ -2767,7 +2768,7 @@ function drawConfig(r){
       LISTAS_EDIT.map(function(l){return lines('l_'+l[0],l[1],LIST(l[0],l[2]))}),lines('l_prefixos','Prefixo de código por categoria de equipamento (uma por linha: Categoria=PREFIXO)',LIST('prefixos',[])),lines('l_obrigacaoTipos','Tipos de obrigação',LIST('obrigacaoTipos',['AVCB / Bombeiros','Extintores','Elevadores','Reservatórios','Dedetização','Seguro predial','SPDA / Para-raios','Outro'])),lines('l_estoqueCats','Categorias de estoque',LIST('estoqueCats',['Elétrica','Hidráulica','Limpeza','Piscina','Ferramentas','Outros'])),lines('l_docTipos','Tipos de documento',LIST('docTipos',['Ata','Regimento','Manual','Laudo / Relatório','Planta','Contrato','Outro'])),
       backupBloco(),h('div',{class:'form'},h('h3',{text:'🧭 Assistente de configuração'}),h('div',{class:'small',text:'Para um condomínio novo: torres, espaços, piscinas e interfone em uma tela.'}),h('button',{class:'btn btn-light block',type:'button',onclick:setupWizard},'Abrir o assistente')),parametrosBloco(),limitesBloco(),rotulosBloco(),privBloco(),h('h3',{text:'EPI (verificação antes de iniciar o serviço)'}),lines('epiCats','Categorias que exigem EPI',epi.cats),lines('epiItens','Itens de EPI',epi.itens),
       h('h3',{text:'Quem recebe cada tipo de alerta'}),rotRows),er,
-    h('button',{class:'btn btn-dark block',type:'button',style:'margin:12px 0',onclick:async function(){
+    h('button',{class:'btn btn-dark block savebar',type:'button',onclick:async function(){
       var ln=function(k){return f[k].value.split('\n').map(function(x){return x.trim()}).filter(Boolean)};var c=ln('categorias');if(!f.nome.value.trim()||!c.length){er.textContent='Informe o nome e ao menos uma categoria.';return}
       try{var cfg=Object.assign({},S.config.extra||{},{nome:f.nome.value.trim(),torres:ln('torres'),categorias:c});['endereco','cnpj','telefone','email','sindico','portaria'].forEach(function(k){cfg[k]=f[k].value.trim()});delete cfg.id;
         await S.db.doc('config/condominio').set(cfg);
@@ -2776,7 +2777,7 @@ function drawConfig(r){
         var nl=Object.assign({},antes,extraL,{prefixos:ln('l_prefixos'),piscinaLocais:LIST('piscinaLocais',['Adulto','Infantil']),ativoCats:ln('l_ativoCats'),fornecedorCats:ln('l_fornecedorCats'),obrigacaoTipos:ln('l_obrigacaoTipos'),estoqueCats:ln('l_estoqueCats'),docTipos:ln('l_docTipos')});delete nl.id;await S.db.doc('ajustes/listas').set(nl);
         await S.db.doc('ajustes/epi').set({cats:ln('epiCats'),itens:ln('epiItens')});
         var rr={};TIPOS.forEach(function(t){rr[t[0]]=rotBox[t[0]].filter(function(x){return x[1].checked}).map(function(x){return x[0]})});await S.db.doc('ajustes/roteamento').set(rr);
-        aud('Configurações alteradas');S.cfgDirty=false;toast('Configurações salvas')}catch(e){er.textContent='Somente o Editor do artefato pode salvar configurações.'}}},'Salvar configurações'));
+        aud('Configurações alteradas');S.cfgDirty=false;toast('Configurações salvas')}catch(e){er.textContent='Somente o Editor do artefato pode salvar configurações.'}}},'Salvar configurações'),h('div',{style:'height:70px'}));
 }
 /* ---- QR por foto, histórico do equipamento ---- */
 function qrFotoBtn(items){
@@ -3820,30 +3821,32 @@ mod({k:'checklist',ic:'✅',t:'Checklist de espaços',see:['PORTEIRO'],edit:[],c
 function condoInfo(){
   var mp=parMapa('piscinas'),ps=Object.keys(mp).map(function(n){return n+' '+mp[n]}).join(' · ');
   return h('div',{class:'info'},h('strong',{text:'🏢 '+(S.config.nome||'Portale Mattino')}),
-    h('div',{class:'small',text:'Torres: '+TORRES().join(', ')}),ps?h('div',{class:'small',text:'Piscinas: '+ps}):null);
+    h('div',{class:'small',text:'Torres: '+TORRES().join(', ')}),ps&&role()!=='PORTEIRO'?h('div',{class:'small',text:'Piscinas: '+ps}):null);
 }
 (function(){
-  var KEEP=['tickets','m:piscinas','m:obrigacoes','m:config','m:preventivas','m:rondas','m:reservas','m:estoque','m:contratos','m:garantias','m:fornecedores'];
+  var KEEP=['tickets','m:piscinas','m:obrigacoes','m:config','m:preventivas','m:rondas','m:reservas','m:estoque','m:contratos','m:garantias','m:fornecedores','m:orcamentos','m:cotacoes','m:custos'];
   ALL_ROLES=['ADMINISTRACAO','MANUTENCISTA','PORTEIRO'];
   Object.keys(DEMO).forEach(function(k){if(ALL_ROLES.indexOf(DEMO[k].r[0])<0)delete DEMO[k]});
   MENU_ALL=[['Operação',['tickets','m:preventivas','m:rondas','m:checklist','m:reservas','m:piscinas']],
     ['Cadastro mestre',['m:ativos','m:etiquetas','m:espacos','m:estoque']],
-    ['Documentação',['m:contratos','m:garantias','m:obrigacoes','m:fornecedores']],
+    ['Documentação',['m:contratos','m:garantias','m:obrigacoes','m:fornecedores','m:documentos']],
+    ['Compras',['m:orcamentos','m:cotacoes']],
     ['Indicadores',['m:saude','m:tendencias','m:recorrencia','m:desempenho']],
     ['Relatórios',['m:relatorios']],
     ['Acessos',['m:equipe']],
-    ['Gestão',['m:config']]];
+    ['Gestão',['m:calendario','m:custos','m:automacoes','m:auditoria','m:config']]];
   /* obrigações e conformidade (prazos obrigatórios): a Administração cadastra; manutenção e portaria consultam */
-  MODS.obrigacoes.see=['MANUTENCISTA','PORTEIRO'];MODS.obrigacoes.edit=[];
+  MODS.obrigacoes.see=['MANUTENCISTA'];MODS.obrigacoes.edit=[];
   MODS.obrigacoes.t='Obrigações e Conformidade';
   /* piscinas: manutenção registra; portaria e administração consultam */
-  MODS.piscinas.see=['MANUTENCISTA','PORTEIRO'];MODS.piscinas.edit=['MANUTENCISTA'];
+  MODS.piscinas.see=['MANUTENCISTA'];MODS.piscinas.edit=['MANUTENCISTA'];
+  MODS.calendario.see=['MANUTENCISTA'];/* o calendário traz os prazos obrigatórios: não vai para a Portaria */
   /* quem vê e quem edita vale o que está no código; a tabela de permissões salva no banco (herdada do PredialFlow) não manda mais */
-  efVer=function(role_,d){return (d.see||[]).indexOf(role_)>=0};
-  efEd=function(role_,d){return (d.edit||[]).indexOf(role_)>=0};
+  efVer=function(role_,d){var b=ROLE_BASE[role_]||role_,c=CUSTOM_DEF[role_];return (d.see||[]).indexOf(b)>=0||!!(c&&(c.ver||[]).indexOf(d.k)>=0)};
+  efEd=function(role_,d){var b=ROLE_BASE[role_]||role_,c=CUSTOM_DEF[role_];return (d.edit||[]).indexOf(b)>=0||!!(c&&(c.ed||[]).indexOf(d.k)>=0)};
   /* reservas e vistorias dos espaços: a Administração registra e aprova; a Portaria faz a vistoria com o checklist do espaço */
   MODS.reservas.see=['PORTEIRO'];
-  var T={ADMINISTRACAO:['m:preventivas','m:rondas','m:checklist','m:reservas','m:piscinas','m:obrigacoes'],MANUTENCISTA:['m:preventivas','m:piscinas','m:obrigacoes','m:estoque'],PORTEIRO:['m:checklist','m:rondas','m:reservas','m:piscinas','m:obrigacoes']};
+  var T={ADMINISTRACAO:['m:preventivas','m:rondas','m:checklist','m:reservas','m:piscinas','m:obrigacoes','m:estoque','m:orcamentos'],MANUTENCISTA:['m:preventivas','m:piscinas','m:obrigacoes','m:estoque','m:orcamentos'],PORTEIRO:['m:checklist','m:rondas','m:reservas']};
   atalhos=function(r){
     var o=[sectionTitle('Atalhos')];
     (T[r]||[]).forEach(function(k){var d=MODS[k.slice(2)];if(d&&canSee(d,r))o.push(bigAction(d.ic,d.t,'',function(){S.tab=k;draw()}))});
@@ -3852,8 +3855,8 @@ function condoInfo(){
   /* avisos da tela inicial: só chamados, piscinas, prazos obrigatórios e backup */
   var alertas0=alertas;
   alertas=function(r){
-    var a=alertas0(r).filter(function(x){return KEEP.indexOf(x.tab)>=0});
-    if(r!=='ADMINISTRACAO'&&r!=='SINDICO'){
+    var a=alertas0(r).filter(function(x){if(KEEP.indexOf(x.tab)<0)return false;var d=String(x.tab).indexOf('m:')===0&&MODS[x.tab.slice(2)];return !d||canSee(d,r)});
+    if(r==='MANUTENCISTA'){
       col('obrigacoes').filter(function(d){return daysTo(d.vencimento)!=null&&daysTo(d.vencimento)<=(Number(d.avisarDias)||90)}).forEach(function(d){
         a.push({ic:'🧭',txt:d.nome+(daysTo(d.vencimento)<0?' — VENCIDA':' vence em '+daysTo(d.vencimento)+' dias'),tab:'m:obrigacoes',sev:prazoSev(daysTo(d.vencimento))})})}
     return a;
