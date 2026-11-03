@@ -3692,19 +3692,25 @@ function condoInfo(){
     h('div',{class:'small',text:'Torres: '+TORRES().join(', ')}),ps?h('div',{class:'small',text:'Piscinas: '+ps}):null);
 }
 (function(){
-  var KEEP=['tickets','m:piscinas','m:obrigacoes','m:config'];
+  var KEEP=['tickets','m:piscinas','m:obrigacoes','m:config','m:preventivas','m:rondas','m:estoque','m:contratos','m:garantias','m:fornecedores'];
   ALL_ROLES=['ADMINISTRACAO','MANUTENCISTA','PORTEIRO'];
   Object.keys(DEMO).forEach(function(k){if(ALL_ROLES.indexOf(DEMO[k].r[0])<0)delete DEMO[k]});
-  MENU_ALL=[['Operação',['tickets','m:piscinas']],['Prazos',['m:obrigacoes']],['Gestão',['m:config']]];
-  /* prazos obrigatórios: a Administração cadastra; manutenção e portaria consultam */
+  MENU_ALL=[['Operação',['tickets','m:preventivas','m:rondas','m:piscinas']],
+    ['Cadastro mestre',['m:ativos','m:etiquetas','m:espacos','m:estoque']],
+    ['Documentação',['m:contratos','m:garantias','m:obrigacoes','m:fornecedores']],
+    ['Indicadores',['m:saude','m:tendencias','m:recorrencia','m:desempenho']],
+    ['Relatórios',['m:relatorios']],
+    ['Acessos',['m:equipe']],
+    ['Gestão',['m:config']]];
+  /* obrigações e conformidade (prazos obrigatórios): a Administração cadastra; manutenção e portaria consultam */
   MODS.obrigacoes.see=['MANUTENCISTA','PORTEIRO'];MODS.obrigacoes.edit=[];
-  MODS.obrigacoes.t='Prazos obrigatórios';
+  MODS.obrigacoes.t='Obrigações e Conformidade';
   /* piscinas: manutenção registra; portaria e administração consultam */
   MODS.piscinas.see=['MANUTENCISTA','PORTEIRO'];MODS.piscinas.edit=['MANUTENCISTA'];
   /* quem vê e quem edita vale o que está no código; a tabela de permissões salva no banco (herdada do PredialFlow) não manda mais */
   efVer=function(role_,d){return (d.see||[]).indexOf(role_)>=0};
   efEd=function(role_,d){return (d.edit||[]).indexOf(role_)>=0};
-  var T={ADMINISTRACAO:['m:piscinas','m:obrigacoes'],MANUTENCISTA:['m:piscinas','m:obrigacoes'],PORTEIRO:['m:piscinas','m:obrigacoes']};
+  var T={ADMINISTRACAO:['m:preventivas','m:rondas','m:piscinas','m:obrigacoes'],MANUTENCISTA:['m:preventivas','m:piscinas','m:obrigacoes','m:estoque'],PORTEIRO:['m:rondas','m:piscinas','m:obrigacoes']};
   atalhos=function(r){
     var o=[sectionTitle('Atalhos')];
     (T[r]||[]).forEach(function(k){var d=MODS[k.slice(2)];if(d&&canSee(d,r))o.push(bigAction(d.ic,d.t,'',function(){S.tab=k;draw()}))});
