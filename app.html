@@ -493,7 +493,7 @@ function drawNew(r){
   var desc=h('textarea',{id:'f-desc',maxlength:'1000',placeholder:'Ex.: torneira do banheiro está vazando.'});
   var pri=h('select',{id:'f-pri'},opt(PRIOR)),sev=h('select',{id:'f-sev'},opt(SEVER,'Média'));
   var asg=null;
-  if(r==='ADMINISTRACAO'){var ms=Object.keys(S.perfis).filter(function(u){return (S.perfis[u].papeis||[]).some(function(x){return (ROLE_BASE[x]||x)==='MANUTENCISTA'})});if(ms.indexOf('demo-manutencao')<0)ms.push('demo-manutencao');
+  if(r==='ADMINISTRACAO'){var ms=Object.keys(S.perfis).filter(function(u){return (S.perfis[u].papeis||[]).some(function(x){return (ROLE_BASE[x]||x)==='MANUTENCISTA'})});if(String(S.uid||'').indexOf('demo-')===0&&ms.indexOf('demo-manutencao')<0)ms.push('demo-manutencao');
     asg=h('select',{id:'f-asg'},h('option',{value:'LIVRE',text:'Livre para a equipe'}),ms.map(function(u){return h('option',{value:u,text:nameOf(u,'Manutencista')})}),h('option',{value:'LIMPEZA',text:'Encaminhar à Limpeza'}))}
   var stat=h('div',{class:'photo-selected',id:'f-fstat',text:S.form.file?'Foto selecionada: '+S.form.file.name:'Nenhuma foto selecionada.'}),prev=h('div');
   var pick=function(cap){return h('input',{type:'file',accept:'image/*',hidden:true,capture:cap?'environment':null,onchange:function(e){var f=e.target.files[0];if(!f)return;S.form.file=f;stat.textContent='Foto selecionada: '+f.name;
@@ -587,7 +587,7 @@ function showReturn(id){var s=h('select',{id:'ret'},opt(LIST('retornoMotivos',RE
   modal(h('div',{class:'modalcard'},h('h2',{text:'O que aconteceu?'}),h('div',{class:'form'},h('label',{for:'ret',text:'Motivo do retorno'}),s,h('label',{for:'retobs',text:'Observação'}),ob),
     h('div',{class:'actions'},back(),h('button',{class:'btn btn-dark',type:'button',onclick:function(){var v=s.value,o=ob.value.trim().slice(0,300);drawDetail();returnTicket(id,v,o)}},'Reabrir chamado'))))}
 function showAssign(id){
-  var ms=Object.keys(S.perfis).filter(function(u){return (S.perfis[u].papeis||[]).some(function(x){return (ROLE_BASE[x]||x)==='MANUTENCISTA'})});if(ms.indexOf('demo-manutencao')<0)ms.push('demo-manutencao');
+  var ms=Object.keys(S.perfis).filter(function(u){return (S.perfis[u].papeis||[]).some(function(x){return (ROLE_BASE[x]||x)==='MANUTENCISTA'})});if(String(S.uid||'').indexOf('demo-')===0&&ms.indexOf('demo-manutencao')<0)ms.push('demo-manutencao');
   var s=h('select',{id:'alvo'},h('option',{value:'LIVRE',text:'Livre para a equipe'}),ms.map(function(u){return h('option',{value:u,text:nameOf(u,'Manutencista')})}),h('option',{value:'LIMPEZA',text:'Encaminhar à Limpeza'}));
   modal(h('div',{class:'modalcard'},h('h2',{text:'👷 Atribuir chamado'}),h('div',{class:'form'},h('label',{for:'alvo',text:'Quem atende?'}),s),
     h('div',{class:'actions'},back(),h('button',{class:'btn btn-dark',type:'button',onclick:function(){var v=s.value;drawDetail();assignTicket(id,v)}},'Salvar'))));
