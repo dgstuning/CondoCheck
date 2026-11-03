@@ -375,7 +375,7 @@ function drawHome(r,first){
   var m=$('#main'),out=[],mine=visible();
   var andamento=mine.filter(function(t){return t.status!=='Concluído'||(t.criadoPor===S.uid&&!t.confirmacao)});
   if(S.canWrite===false)out.push(h('div',{class:'warnbox',text:'Você está só com permissão de leitura neste artefato.'}));
-  var openBtn=function(txt){return (r==='SINDICO'||S.canWrite===false)?null:h('button',{class:'btn btn-dark block',type:'button',style:'margin-top:13px;font-size:16px',onclick:function(){S.tab='new';S.form={cat:'',file:null,preview:''};draw()}},txt||'＋ Abrir chamado')};
+  var openBtn=function(txt){return (r==='SINDICO'||(S.canWrite===false&&r!=='ADMINISTRACAO'))?null:h('button',{class:'btn btn-dark block',type:'button',style:'margin-top:13px;font-size:16px',onclick:function(){S.tab='new';S.form={cat:'',file:null,preview:''};draw()}},txt||'＋ Abrir chamado')};
   if(r==='MORADOR'){
     var un=S.perfil&&S.perfil.torre?'Unidade: '+S.perfil.torre+' • '+S.perfil.unidade:'';
     out.push(hero('Olá, '+(first||'morador'),'Como podemos ajudar?',un),openBtn(),sectionTitle('Em andamento'),listOf(andamento,false,['Nenhum chamado em andamento','Quando você abrir um chamado, ele aparece aqui.']));
@@ -1630,7 +1630,7 @@ function pdfFrom(title,lines,filename){
 function fichaPdf(t){pdfFrom('Ficha do chamado '+shortId(t)+' - '+S.config.nome,['Status: '+t.status+' | Prioridade: '+(t.prioridade||'Normal')+' | Severidade: '+(t.severidade||'-'),'Categoria: '+(t.categoria||'-')+' | Local: '+(t.local||'-'),'Aberto em: '+fmtDate(t.criadoEm)+' por '+(t.origem||'Morador'),'Responsável: '+(t.atribuidoAId?nameOf(t.atribuidoAId,'Equipe'):'-'),'Tempo ativo: '+fmtDur(activeMs(t)),'','Descrição:',t.descricao||'','',t.nota?'Nota de conclusão: '+t.nota:'',t.materiais&&t.materiais.length?'Materiais: '+t.materiais.map(function(m){return m.item+' x'+m.qtd}).join(', '):'','','Histórico:'].concat((t.historico||[]).map(function(e){return fmtDate(e.em)+' - '+e.acao})),'chamado-'+shortId(t)+'.pdf')}
 /* ---- chamados: busca e filtros salvos ---- */
 function drawTickets(r){
-  var m=$('#main'),base=visible(),out=[h('div',{class:'mod-head'},h('h2',{text:r==='MORADOR'?'Meus chamados':'Chamados'}),EXP.btn(EXP.tk))],box=h('div');
+  var m=$('#main'),base=visible(),out=[h('div',{class:'mod-head'},h('h2',{text:r==='MORADOR'?'Meus chamados':'Chamados'}),h('div',{style:'display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end'},EXP.btn(EXP.tk),(r==='SINDICO'||(S.canWrite===false&&r!=='ADMINISTRACAO'))?null:h('button',{class:'btn btn-dark',type:'button',onclick:function(){S.tab='new';S.form={cat:'',file:null,preview:''};draw()}},'＋ Novo chamado')))],box=h('div');
   var q=h('input',{type:'search',placeholder:'Buscar por local, categoria ou texto…','aria-label':'Buscar chamados',value:S.q.tk||''});
   var apply=function(){var l=base.slice();if(S.filter!=='todos')l=l.filter(function(t){return t.status===S.filter});var s=(S.q.tk||'').toLowerCase().trim();if(s)l=l.filter(function(t){return [t.descricao,t.local,t.categoria,shortId(t),t.origem].join(' ').toLowerCase().indexOf(s)>=0});
     box.replaceChildren(listOf(l,r!=='MORADOR',['Nenhum chamado aqui','Quando houver chamados nesta lista, eles aparecem aqui.']));if(typeof savef!=='undefined')savef.hidden=S.filter==='todos'&&!(S.q.tk||'').trim()};
